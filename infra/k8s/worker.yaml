@@ -1,0 +1,31 @@
+# Same image as the API, different command. Safe to run many replicas:
+# the outbox uses FOR UPDATE SKIP LOCKED and BullMQ distributes jobs.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: dari-worker, namespace: dari }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: dari-worker } }
+  template:
+    metadata: { labels: { app: dari-worker } }
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: worker
+          image: ghcr.io/dari/api:latest
+          command: ["node", "dist/worker.js"]
+          envFrom: [{ configMapRef: { name: dari-config } }, { secretRef: { name: dari-secrets } }]
+          resources:
+            requests: { cpu: 200m, memory: 256Mi }
+            limits: { memory: 512Mi }
+          securityContext: { runAsNonRoot: true, allowPrivilegeEscalation: false, readOnlyRootFilesystem: true }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: dari-worker, namespace: dari }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: dari-worker }
+  minReplicas: 2
+  maxReplicas: 20
+  metrics:
+    - { type: Resource, resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } } }

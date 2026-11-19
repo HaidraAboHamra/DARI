@@ -1,19 +1,19 @@
 # داري — DARI · City OS
 
-**سلمية بين إيديك.** منصة مدينة رقمية تبدأ من سلمية وتتوسع إلى سوريا: دليل، بحث بلغة الناس، طلبات وتوصيل، أنظمة للتجار (Merchant OS)، وظائف، أخبار، وذكاء مدينة.
+**سلمية بين إيديك.** منصة مدينة رقمية تبدأ من سلمية وتتوسع إلى سوريا: بحث بلغة الناس، دليل وخريطة، طلبات وتوصيل لأي شيء، حجوزات، خدمات مهنية، فعاليات ورحلات بتذاكر، عقارات، وظائف، أخبار، نظام تشغيل للتجار (Merchant OS)، مساعد ذكي، وذكاء مدينة.
 
 > A multi-city "City OS" super-app platform. Salamiyah is the pilot city; the city is a data dimension, not a hard-coded product.
 
 ---
 
-## ما الموجود الآن · What's built
+## الميزات · Features
 
 | الطبقة | المحتوى |
 |---|---|
-| **المواطن** (PWA) | الرئيسية «شو بدك اليوم؟»، بحث بالعامية مع فهم النية، استكشاف حسب القطاع، صفحات الأنشطة (اتصال/واتساب/موقع، مفتوح الآن، تقييمات)، سلة وطلب، تتبع الطلب، أخبار، وظائف والتقديم عليها، توصيل لأي شيء («اشترِ لي»، مستندات…)، الحساب والإشعارات |
-| **Merchant OS** | تسجيل النشاط والتحقق، طلبات حية مع أزرار الحالة، الكتالوج والمخزون، CRM بشرائح الزبائن (جديد/وفي/VIP/معرّض للفقد/خامل)، الفريق والصلاحيات (RBAC)، الإعدادات |
-| **المندوب** | لوحة مهام المدينة، استلام ذري (مندوب واحد فقط يحصل على المهمة)، تحديث الحالة ينعكس على الطلب |
-| **الإدارة / ذكاء المدينة** | مؤشرات المدينة (North Star = احتياجات مُنجزة)، البحث بلا نتيجة، الأكثر بحثاً، محرك الفرص، طابور التحقق من الأنشطة |
+| **المواطن** (PWA) | «شو بدك اليوم؟»، بحث بالعامية يفهم النية والاستعجال ويتحمل الأخطاء الإملائية، استكشاف حسب القطاع، خريطة المدينة، صفحات الأنشطة (اتصال/واتساب/موقع، مفتوح الآن، عروض، تقييمات تفصيلية، متابعة، مفضلة)، سلة وطلب مع كوبونات، تتبع الطلب لحظياً، «اطلب مجدداً»، حجز مواعيد/ملاعب/فنادق/مزارع، طلب خدمة مهنية واستلام عروض أسعار، فعاليات ورحلات بتذاكر QR، عقارات مع طلب معاينة، وظائف والتقديم عليها، توصيل لأي شيء، أخبار المدينة، مساعد المدينة الذكي، إشعارات فورية |
+| **Merchant OS** | تسجيل النشاط والتحقق، طلبات حية مع أزرار الحالة، الكتالوج والمخزون واستيراد CSV، الحجوزات والموارد، طلبات الخدمة وعروض الأسعار، CRM بشرائح الزبائن، Customer Connect (QR بموافقة) ورسائل للمتابعين، الكوبونات، الباقة والاستخدام، الفريق والصلاحيات (8 أدوار)، تنبيهات ذكية، صور الشعار والغلاف والمنتجات |
+| **المندوب** | لوحة مهام المدينة لحظياً، استلام ذري (مندوب واحد فقط)، تحديث الحالة ينعكس على الطلب، كشف أرباح ومؤشرات جودة |
+| **الإدارة / ذكاء المدينة** | مؤشرات المدينة (North Star = احتياجات مُنجزة)، البحث بلا نتيجة، الأكثر بحثاً، محرك الفرص، طابور التحقق، تسجيل دفعات الاشتراك، الظهور المميز، أدوار الفريق، محرر الأخبار |
 
 ## البنية · Architecture
 
@@ -23,12 +23,15 @@ apps/
   web/        Next.js 16 (App Router, RTL Arabic PWA) — BFF with httpOnly sessions
 packages/
   contracts/  Shared domain: enums, zod schemas, types, Arabic text normalization,
-              order state machine, opening hours — one source of truth for API + web
+              order/booking state machines, availability, plans, coupons — one source of truth
   tsconfig/   Shared compiler settings
+infra/
+  k8s/        Deployments, HPA, PDB, ingress (SSE-ready), migration job
+  load/       k6 load test
 ```
 
-PostgreSQL 16 (pg_trgm) · Redis (cache, rate limits, OTP, BullMQ queues) · Transactional outbox · Monthly-partitioned analytics.
-Full design and the scaling plan: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** · Blueprint coverage: **[docs/ROADMAP.md](docs/ROADMAP.md)**.
+PostgreSQL 16 (pg_trgm) · Redis (cache, rate limits, OTP, pub/sub, BullMQ) · Transactional outbox · Server-Sent Events · Monthly-partitioned analytics · S3-compatible media · Prometheus metrics.
+Design and scaling plan: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** · Blueprint coverage: **[docs/ROADMAP.md](docs/ROADMAP.md)**.
 
 ## التشغيل · Getting started
 
@@ -49,23 +52,25 @@ pnpm db:migrate && pnpm db:seed             # demo data for Salamiyah
 pnpm dev                                    # api :4000, worker, web :3000
 ```
 
+Optional: set `ANTHROPIC_API_KEY` to let Claude phrase the City AI assistant's answers (it is grounded in Dari's own search results; without a key a rules engine answers). Production OTP delivery: `SMS_PROVIDER=http|whatsapp` (see `apps/api/.env.example`).
+
 ### Demo accounts
 Login is by phone + OTP. In development the code is always **123456**.
 
 | الدور | الهاتف |
 |---|---|
-| Admin (ذكاء المدينة، التحقق) | `0900000001` |
+| Admin (ذكاء المدينة، التحقق، الاشتراكات) | `0900000001` |
 | Merchant (مالك «مطعم الشام») | `0900000002` |
 | Courier | `0900000003` |
 | Editor (الأخبار) | `0900000004` |
 | Citizen | `0900000005` |
 
-> Seed businesses are illustrative placeholders, not verified real businesses.
+> Seed businesses, events and listings are illustrative placeholders, not verified real entities.
 
 ### Quality gates
 ```bash
 pnpm typecheck   # strict TypeScript everywhere
-pnpm test        # unit + e2e against real Postgres/Redis (uses dari_test DB, Redis db 15)
+pnpm test        # unit + e2e against real Postgres/Redis (dari_test DB, Redis db 15)
 pnpm build
 ```
 CI runs the same three steps on every PR (`.github/workflows/ci.yml`).

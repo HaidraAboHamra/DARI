@@ -1,6 +1,6 @@
 import type { DeliveryTask, Page } from '@dari/contracts';
 import type { Metadata } from 'next';
-import { Badge, EmptyState, PageHeader, SectionHeader } from '@/components/ui/primitives';
+import { Badge, EmptyState, PageHeader, SectionHeader, Stat } from '@/components/ui/primitives';
 import { api } from '@/lib/api';
 import { config } from '@/lib/config';
 import { money, timeAgo } from '@/lib/format';
@@ -30,9 +30,10 @@ function TaskCard({ task, children }: { task: DeliveryTask; children: React.Reac
 
 export default async function CourierPage() {
   await requireUser('/courier', ['courier']);
-  const [board, mine] = await Promise.all([
+  const [board, mine, stats] = await Promise.all([
     api<Page<DeliveryTask>>('/deliveries/board', { query: { city: config.city, limit: 30 } }),
     api<Page<DeliveryTask>>('/deliveries/assigned', { query: { limit: 30 } }),
+    api<{ delivered: number; earnings: number; averageMinutes: number | null; successRate: number | null }>('/deliveries/stats', { query: { days: 7 } }),
   ]);
   const active = mine.items.filter((t) => t.status === 'assigned' || t.status === 'picked_up');
 
@@ -40,6 +41,12 @@ export default async function CourierPage() {
     <div className="flex flex-col gap-8">
 
       <PageHeader title="لوحة المندوب" subtitle="المهام المتاحة في سلمية — أول من يستلم يحصل على المهمة" />
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Stat label="أرباح 7 أيام" value={money(stats.earnings)} />
+        <Stat label="توصيلات مكتملة" value={stats.delivered} />
+        <Stat label="متوسط مدة التوصيل" value={stats.averageMinutes !== null ? `${stats.averageMinutes} د` : '—'} />
+        <Stat label="نسبة النجاح" value={stats.successRate !== null ? `${Math.round(stats.successRate * 100)}٪` : '—'} />
+      </section>
       <section>
         <SectionHeader title={`مهامي الحالية (${active.length})`} />
         {active.length === 0 ? <p className="text-sm text-muted">لا مهام جارية.</p> : (

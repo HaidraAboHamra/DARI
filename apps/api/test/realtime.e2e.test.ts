@@ -39,3 +39,21 @@ describe('realtime stream (e2e)', () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe('metrics', () => {
+  it('exposes Prometheus metrics with route templates, not raw URLs', async () => {
+    const h = await createHarness();
+    try {
+      await h.app.inject({ method: 'GET', url: '/api/v1/cities' });
+      await h.app.inject({ method: 'GET', url: '/api/v1/businesses/by-slug/anything-123' });
+      const res = await h.app.inject({ method: 'GET', url: '/metrics' });
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toContain('dari_http_request_duration_seconds_bucket');
+      expect(res.body).toContain('route="/api/v1/businesses/by-slug/:slug"');
+      expect(res.body).not.toContain('anything-123');
+      expect(res.body).toContain('dari_outbox_backlog');
+    } finally {
+      await h.close();
+    }
+  });
+});

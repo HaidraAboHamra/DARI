@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { CreateDeliveryInput, DeliveryStatus, DeliveryTask, Page } from '@dari/contracts';
-import { and, desc, eq, lt, type SQL } from 'drizzle-orm';
+import { and, desc, eq, gte, lt, type SQL, sql } from 'drizzle-orm';
 import type { AuthUser } from '../../common/auth/auth-user';
 import { ConflictError, ForbiddenError, NotFoundError } from '../../common/errors/app-error';
 import { decodeCursor, toPage } from '../../common/pagination/cursor';
@@ -100,6 +100,32 @@ export class DeliveryService {
 
   async assignedToMe(courier: AuthUser, cursor: string | undefined, limit: number): Promise<Page<DeliveryTask>> {
     return this.page([eq(deliveryTasks.courierId, courier.id)], cursor, limit);
+  }
+
+  /** Earnings statement and quality metrics for a courier (blueprint §18.1). */
+  async courierStats(courier: AuthUser, days: number) {
+    const since = new Date(Date.now() - days * 86_400_000);
+    const [row] = await this.db
+      .select({
+        delivered: sql<number>`count(*) filter (where ${deliveryTasks.status} = 'delivered')::int`,
+        failed: sql<number>`count(*) filter (where ${deliveryTasks.status} = 'failed')::int`,
+        active: sql<number>`count(*) filter (where ${deliveryTasks.status} in ('assigned','picked_up'))::int`,
+        earnings: sql<number>`coalesce(sum(${deliveryTasks.fee}) filter (where ${deliveryTasks.status} = 'delivered'), 0)::bigint`,
+        avgMinutes: sql<number | null>`avg(extract(epoch from (${deliveryTasks.completedAt} - ${deliveryTasks.assignedAt})) / 60) filter (where ${deliveryTasks.status} = 'delivered')`,
+      })
+      .from(deliveryTasks)
+      .where(and(eq(deliveryTasks.courierId, courier.id), gte(deliveryTasks.createdAt, since)));
+    const delivered = row?.delivered ?? 0;
+    const failed = row?.failed ?? 0;
+    return {
+      periodDays: days,
+      delivered,
+      failed,
+      active: row?.active ?? 0,
+      earnings: Number(row?.earnings ?? 0),
+      averageMinutes: row?.avgMinutes !== null && row?.avgMinutes !== undefined ? Math.round(Number(row.avgMinutes)) : null,
+      successRate: delivered + failed ? Math.round((delivered / (delivered + failed)) * 100) / 100 : null,
+    };
   }
 
   /** Compare-and-set claim: two couriers can never get the same task. */

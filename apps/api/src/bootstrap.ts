@@ -9,6 +9,7 @@ import Redis from 'ioredis';
 import { Logger } from 'nestjs-pino';
 import { randomUUID } from 'node:crypto';
 import { AppModule } from './app.module';
+import { httpDuration, httpErrors } from './modules/metrics/metrics';
 import type { Env } from './config/env';
 
 /** Builds the HTTP application. Shared by `main.ts` and the integration tests. */
@@ -42,7 +43,16 @@ export async function createApp(env: Env, options: { logger?: boolean } = {}): P
 
   await app.register(multipart, { limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 5 } });
 
-  app.setGlobalPrefix('api', { exclude: ['health/live', 'health/ready', 'media/{*path}'] });
+  // RED metrics per route template (never raw URLs: bounded label cardinality).
+  const fastify = app.getHttpAdapter().getInstance();
+  fastify.addHook('onResponse', async (req, reply) => {
+    const route = req.routeOptions.url ?? 'unmatched';
+    if (route === '/metrics') return;
+    httpDuration.observe({ method: req.method, route, status: String(reply.statusCode) }, reply.elapsedTime / 1000);
+    if (reply.statusCode >= 500) httpErrors.inc({ route });
+  });
+
+  app.setGlobalPrefix('api', { exclude: ['health/live', 'health/ready', 'media/{*path}', 'metrics'] });
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
   app.enableShutdownHooks();
   return app;

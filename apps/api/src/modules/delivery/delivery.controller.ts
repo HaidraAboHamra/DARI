@@ -16,6 +16,7 @@ import { zod } from '../../common/validation/zod.pipe';
 import { DeliveryService } from './delivery.service';
 
 const boardQuery = cursorQuerySchema.extend({ city: z.string().trim().min(2).max(60) });
+const statsQuery = z.object({ days: z.coerce.number().int().min(1).max(90).default(7) });
 
 @Controller({ path: 'deliveries', version: '1' })
 export class DeliveryController {
@@ -47,6 +48,12 @@ export class DeliveryController {
   @Get('assigned')
   assigned(@CurrentUser() user: AuthUser, @Query(zod(cursorQuerySchema)) q: CursorQuery): Promise<Page<DeliveryTask>> {
     return this.delivery.assignedToMe(user, q.cursor, q.limit);
+  }
+
+  @RequirePlatformRole('courier')
+  @Get('stats')
+  stats(@CurrentUser() user: AuthUser, @Query(zod(statsQuery)) q: z.infer<typeof statsQuery>) {
+    return this.delivery.courierStats(user, q.days);
   }
 
   @RequirePlatformRole('courier')

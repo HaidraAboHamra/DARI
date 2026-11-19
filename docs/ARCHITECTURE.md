@@ -60,7 +60,16 @@ always ship identical domain code.
 | `search` | search logs | See §5. |
 | `analytics` | analytics_events | Batched ingestion → queue → bulk insert. |
 | `insights` | search_demand_daily | City KPIs (north star: *completed needs*), zero-result demand, opportunity engine, merchant overview, CRM segments. Reads roll-ups only. |
-| `notifications` | notifications | In-app inbox fed by outbox handlers. |
+| `notifications` | notifications | In-app inbox fed by outbox handlers; every notification is also pushed live (§5b). |
+| `bookings` | bookable_resources, bookings | One engine for appointments, courts, rooms, farms: weekly hours → slots in the city time zone, nights for stays, capacity per resource. Bookings are serialized per resource with a Postgres advisory lock, so the last slot can't be double-booked. Shared booking state machine. |
+| `services` | service_requests, service_quotes | Provider OS: request → matching providers notified → one quote per provider → customer accepts one (compare-and-set) → on the way → arrived → completed. Customer phone/address revealed only to the assigned provider; competitors never see each other's prices. |
+| `events` | events, tickets | Events & trips: seats reserved by a conditional `UPDATE … WHERE seats_taken + n <= capacity`, short ticket codes + QR, door check-in once (camera via BarcodeDetector or manual). |
+| `property` | property_listings, viewing_requests | Listings with filters, featured-first keyset ordering, viewing requests as owner leads. |
+| `marketing` | coupons, broadcasts, favorites, customer_relationships (consent) | Customer Connect opt-in/out, broadcasts only to consenting customers (1/day, set-based fan-out in SQL), coupons redeemed atomically inside the order transaction and released on cancel, favorites. |
+| `admin` | plan_payments | Manual subscription billing (revenue-first), featured placement, staff roles — all audited. Plan limits/feature gates are enforced by `PlansService`. |
+| `media` | media | Upload port: local disk (dev) or S3/R2/MinIO; magic-byte sniffing, 5 MB cap, immutable caching. |
+| `assistant` | — | City AI (§5c). |
+| `realtime`, `metrics` | — | SSE stream (§5b) and Prometheus `/metrics` (§7). |
 
 \* written by those modules' services through clearly named methods.
 
@@ -96,6 +105,27 @@ worker), so there is no cycle.
 4. Every search is logged asynchronously; zero-result searches roll up daily
    into `search_demand_daily` — the "what is the city missing" signal.
 
+## 5b. Realtime
+
+Every notification is published to Redis channel `rt:user:<id>`. Each API
+instance subscribes to a user's channel only while that user has an open
+`GET /api/v1/stream` (Server-Sent Events) on that instance — reference counted —
+so instances receive only the traffic they serve. The web app proxies the stream
+same-origin (`/api/stream`, token stays in the httpOnly cookie) and refreshes the
+current screen on each event, falling back to polling if the stream is down.
+Couriers get a ping whenever a new delivery task appears.
+
+## 5c. City AI assistant
+
+1. The intent engine + universal search run first (and log demand like any search).
+2. With `ANTHROPIC_API_KEY`, one Claude call phrases a short Arabic answer **only
+   from those results** (system prompt forbids inventing names, prices or phones;
+   health questions are routed to professionals). Effort `low`, server-side
+   refusal fallback enabled, prompt prefix cached.
+3. Without a key, or on any model error/refusal, a deterministic rules engine
+   answers from the same results. Next-step buttons are always computed from data.
+4. Per-user/IP hourly quota keeps LLM spend bounded at scale.
+
 ## 6. Security
 
 - Tokens never reach browser JavaScript (httpOnly, SameSite=Lax cookies; the
@@ -112,13 +142,17 @@ worker), so there is no cycle.
 
 ## 7. Scaling to millions of users — what is ready and what to add
 
-Ready in the code today:
+Ready in the code today (and in `infra/k8s`):
 
 - Horizontal scaling of web, API and worker (stateless; outbox uses `SKIP LOCKED`).
 - Read/write split (`DATABASE_REPLICA_URL`), connection pool limits, statement timeouts.
 - Redis caching of hot reads with explicit invalidation; Next caches public pages.
 - Async ingestion of high-volume writes; bulk inserts; partitioned event table.
-- Idempotent writes and race-safe stock/claims verified by concurrent tests.
+- Idempotent writes and race-safe stock, coupons, seats, slots, quotes and claims — each verified by a concurrent test.
+- Realtime fan-in scales per instance (§5b); media served from object storage/CDN.
+- Prometheus `/metrics`: per-route latency histograms (route templates only), 5xx counters, DB pool gauges, outbox backlog, open SSE streams.
+- Kubernetes: API/web/worker Deployments with HPA (API 3→60 pods), PDB, zone spread, graceful drain, migration PreSync job, SSE-safe ingress.
+- `infra/load/k6-browse.js` with p95 thresholds for listing and search.
 
 To add as traffic grows (in roughly this order):
 

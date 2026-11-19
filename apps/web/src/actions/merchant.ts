@@ -124,3 +124,13 @@ export async function updateTask(taskId: string, status: 'picked_up' | 'delivere
     return toActionError(err);
   }
 }
+
+export async function importProducts(businessId: string, rows: Record<string, unknown>[]): Promise<{ created?: number; errors?: { row: number; message: string }[]; error?: string }> {
+  try {
+    const res = await api<{ created: number; errors: { row: number; message: string }[] }>(`/merchant/businesses/${businessId}/products/import`, { method: 'POST', body: { rows } });
+    revalidatePath(`/merchant/${businessId}/products`);
+    return res;
+  } catch (err) {
+    return { error: toActionError(err).error ?? 'تعذر الاستيراد' };
+  }
+}

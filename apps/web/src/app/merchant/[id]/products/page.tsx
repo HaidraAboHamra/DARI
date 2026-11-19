@@ -1,6 +1,7 @@
 import type { Product } from '@dari/contracts';
 import { EmptyState, SectionHeader } from '@/components/ui/primitives';
 import { api } from '@/lib/api';
+import { CsvImport } from './csv-import';
 import { ProductForm } from './product-form';
 import { ProductRow } from './product-row';
 
@@ -13,6 +14,7 @@ export default async function ProductsPage({ params }: { params: Promise<{ id: s
         <SectionHeader title="إضافة منتج أو خدمة" />
         <ProductForm businessId={id} />
       </section>
+      <CsvImport businessId={id} />
       {products.length === 0 ? (
         <EmptyState title="الكتالوج فارغ" hint="أضف منتجاتك أو قائمة طعامك لتظهر على صفحتك ويمكن طلبها." />
       ) : (

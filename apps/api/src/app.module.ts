@@ -20,6 +20,7 @@ import { InsightsModule } from './modules/insights/insights.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
 import { MediaModule } from './modules/media/media.module';
+import { MetricsModule } from './modules/metrics/metrics.module';
 import { NewsModule } from './modules/news/news.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OrdersModule } from './modules/orders/orders.module';
@@ -88,6 +89,7 @@ export const CORE_MODULES = [
     AdminModule,
     RealtimeApiModule,
     AssistantModule,
+    MetricsModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: HttpErrorFilter }],
 })

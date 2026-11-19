@@ -3,6 +3,7 @@ import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { ENV } from '../../config/config.module';
 import type { Env } from '../../config/env';
+import { dbPool } from '../../modules/metrics/metrics';
 import * as schema from './schema';
 
 export type Database = NodePgDatabase<typeof schema>;
@@ -44,6 +45,15 @@ class PoolRegistry implements OnApplicationShutdown {
   constructor(@Inject(ENV) env: Env) {
     this.primary = createPool(env.DATABASE_URL, env.DB_POOL_MAX);
     this.replica = env.DATABASE_REPLICA_URL ? createPool(env.DATABASE_REPLICA_URL, env.DB_POOL_MAX) : null;
+    const timer = setInterval(() => {
+      for (const [name, pool] of [['primary', this.primary], ['replica', this.replica]] as const) {
+        if (!pool) continue;
+        dbPool.set({ pool: name, state: 'total' }, pool.totalCount);
+        dbPool.set({ pool: name, state: 'idle' }, pool.idleCount);
+        dbPool.set({ pool: name, state: 'waiting' }, pool.waitingCount);
+      }
+    }, 5_000);
+    timer.unref();
   }
 
   async onApplicationShutdown(): Promise<void> {

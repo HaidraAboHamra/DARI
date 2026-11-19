@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { CreateProductInput, Product, UpdateProductInput } from '@dari/contracts';
 import { createProductSchema } from '@dari/contracts';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import type { AuthUser } from '../../common/auth/auth-user';
-import { NotFoundError } from '../../common/errors/app-error';
+import { ConflictError, NotFoundError } from '../../common/errors/app-error';
 import { DB, DB_READ, type Database } from '../../infrastructure/database/database.module';
 import { products } from '../../infrastructure/database/schema';
 import { CacheService } from '../../infrastructure/redis/cache.service';
@@ -60,6 +60,34 @@ export class CatalogService {
       .returning();
     await this.cache.invalidate(this.menuKey(businessId));
     return toProduct(row!);
+  }
+
+  /**
+   * Bulk import (blueprint §8.3 import assistant, catalog side): validates every
+   * row, reports row-level errors, and inserts all valid rows in one statement.
+   */
+  async importMany(user: AuthUser, businessId: string, rows: unknown[]): Promise<{ created: number; errors: { row: number; message: string }[] }> {
+    await this.access.require(user, businessId, 'catalog.write');
+    const valid: ReturnType<typeof createProductSchema.parse>[] = [];
+    const errors: { row: number; message: string }[] = [];
+    rows.forEach((raw, index) => {
+      const parsed = createProductSchema.safeParse(raw);
+      if (parsed.success) valid.push(parsed.data);
+      else errors.push({ row: index + 1, message: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('، ') });
+    });
+    if (!valid.length) return { created: 0, errors };
+
+    const limits = await this.plans.limitsFor(businessId);
+    const [{ n }] = (await this.db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(products)
+      .where(and(eq(products.businessId, businessId), isNull(products.deletedAt)))) as [{ n: number }];
+    if (n + valid.length > limits.maxProducts) {
+      throw new ConflictError(`الاستيراد يتجاوز حد باقة «${limits.nameAr}» (${limits.maxProducts} منتج)`, 'PLAN_LIMIT', { available: Math.max(0, limits.maxProducts - n) });
+    }
+    await this.db.insert(products).values(valid.map((p) => ({ ...p, businessId, searchText: buildSearchText(p.name, p.section, p.description) })));
+    await this.cache.invalidate(this.menuKey(businessId));
+    return { created: valid.length, errors };
   }
 
   async update(user: AuthUser, businessId: string, productId: string, input: UpdateProductInput): Promise<Product> {

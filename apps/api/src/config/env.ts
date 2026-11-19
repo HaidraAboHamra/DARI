@@ -56,6 +56,11 @@ const envSchema = z
     WHATSAPP_TOKEN: z.string().optional(),
     /** Approved WhatsApp authentication template whose body has one {{1}} code parameter. */
     WHATSAPP_OTP_TEMPLATE: z.string().default('dari_otp'),
+    /** If set, GET /metrics requires `Authorization: Bearer <token>` (Prometheus scrape config). */
+    METRICS_TOKEN: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v : undefined)),
     TRUST_PROXY: z
       .enum(['true', 'false'])
       .default('true')

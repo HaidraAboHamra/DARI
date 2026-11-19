@@ -6,10 +6,13 @@ import {
   type UpdateProductInput,
   updateProductSchema,
 } from '@dari/contracts';
+import { z } from 'zod';
 import type { AuthUser } from '../../common/auth/auth-user';
 import { CurrentUser, Public } from '../../common/auth/decorators';
 import { zod } from '../../common/validation/zod.pipe';
 import { CatalogService } from './catalog.service';
+
+const importBody = z.object({ rows: z.array(z.unknown()).min(1).max(500) });
 
 @Controller({ version: '1' })
 export class CatalogController {
@@ -33,6 +36,11 @@ export class CatalogController {
     @Body(zod(createProductSchema)) body: CreateProductInput,
   ): Promise<Product> {
     return this.catalog.create(user, businessId, body);
+  }
+
+  @Post('merchant/businesses/:id/products/import')
+  import(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) businessId: string, @Body(zod(importBody)) body: z.infer<typeof importBody>) {
+    return this.catalog.importMany(user, businessId, body.rows);
   }
 
   @Patch('merchant/businesses/:id/products/:productId')

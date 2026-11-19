@@ -10,6 +10,8 @@ x-api-env: &api-env
   REDIS_URL: redis://redis:6379
   JWT_SECRET: local-compose-secret-change-me-0123456789abcdef
   CORS_ORIGINS: http://localhost:3000
+  PUBLIC_API_URL: http://localhost:4000
+  UPLOAD_DIR: /data/uploads
   LOG_LEVEL: info
 
 services:
@@ -36,6 +38,7 @@ services:
     build: { context: ., dockerfile: apps/api/Dockerfile }
     environment: *api-env
     ports: ['4000:4000']
+    volumes: [uploads:/data/uploads]
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
@@ -56,3 +59,4 @@ services:
 
 volumes:
   pgdata:
+  uploads:
