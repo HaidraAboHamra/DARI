@@ -33,7 +33,7 @@ export class SearchService {
       cityId: city.id,
       timezone: city.timezone,
       terms: intent.terms.map(stemArabic),
-      vertical: vertical === 'jobs' || vertical === 'news' || vertical === 'property' ? null : vertical,
+      vertical: vertical === 'jobs' || vertical === 'news' ? null : vertical,
       categoryIds: query.vertical && query.vertical !== intent.vertical ? [] : intent.categoryIds,
       kinds: kindsFor(intent, vertical),
       openNow: intent.signals.openNow || intent.intent === 'urgent',

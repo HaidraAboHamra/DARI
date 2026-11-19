@@ -67,3 +67,10 @@ describe('IntentClassifier property hints', () => {
     expect(classifier.classify('أرض للبيع').property).toEqual({ purpose: 'sale', propertyType: 'land' });
   });
 });
+
+describe('IntentClassifier time words', () => {
+  it('treats time expressions as qualifiers, not search terms', () => {
+    expect(classifier.classify('في رحلة هالأسبوع؟')).toMatchObject({ intent: 'travel', vertical: 'trips', terms: [] });
+    expect(classifier.classify('احجزلي ملعب بكرا')).toMatchObject({ intent: 'book', terms: [] });
+  });
+});

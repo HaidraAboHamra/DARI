@@ -4,6 +4,7 @@ import { and, desc, eq, inArray, isNull, lt, type SQL, sql } from 'drizzle-orm';
 import { decodeCursor, toPage } from '../../common/pagination/cursor';
 import { DB, type Database, type DbExecutor } from '../../infrastructure/database/database.module';
 import { notifications } from '../../infrastructure/database/schema';
+import { RealtimePublisher } from '../../infrastructure/realtime/realtime.module';
 
 export interface NotificationDto {
   id: string;
@@ -26,11 +27,23 @@ export interface NewNotification {
 /** In-app inbox. Push/SMS fan-out can subscribe to the same outbox events later. */
 @Injectable()
 export class NotificationsService {
-  constructor(@Inject(DB) private readonly db: Database) {}
+  constructor(
+    @Inject(DB) private readonly db: Database,
+    private readonly realtime: RealtimePublisher,
+  ) {}
 
   async notify(items: NewNotification[], db: DbExecutor = this.db): Promise<void> {
     if (!items.length) return;
     await db.insert(notifications).values(items.map((n) => ({ ...n, data: n.data ?? {} })));
+    // Best effort: the inbox is the source of truth, the push only makes it instant.
+    await Promise.all(
+      items.map((n) => this.realtime.publish([n.userId], { type: n.type, title: n.title, body: n.body, data: n.data ?? {} }).catch(() => undefined)),
+    );
+  }
+
+  /** Live ping for clients after a set-based fan-out that bypassed notify(). */
+  async ping(userIds: string[], type: string): Promise<void> {
+    await this.realtime.publish(userIds, { type }).catch(() => undefined);
   }
 
   async list(userId: string, cursor: string | undefined, limit: number): Promise<Page<NotificationDto> & { unread: number }> {

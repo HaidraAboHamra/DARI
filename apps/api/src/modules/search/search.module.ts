@@ -7,5 +7,6 @@ import { SearchService } from './search.service';
 @Module({
   controllers: [SearchController],
   providers: [SearchService, { provide: SearchEngine, useClass: PostgresSearchEngine }],
+  exports: [SearchService],
 })
 export class SearchModule {}

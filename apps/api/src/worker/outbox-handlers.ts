@@ -67,7 +67,10 @@ export class OutboxHandlers {
       );
     },
     'order.status_changed': async (e) => {
-      if (e.payload.to === 'accepted') await this.delivery.createForOrder(e.aggregateId);
+      if (e.payload.to === 'accepted') {
+        await this.delivery.createForOrder(e.aggregateId);
+        await this.pingCouriers();
+      }
       const title = ORDER_STATUS_AR[e.payload.to];
       if (!title) return;
       await this.notifications.notify([
@@ -75,7 +78,8 @@ export class OutboxHandlers {
       ]);
     },
     'delivery.requested': async () => {
-      // Dispatch is pull-based (courier board); a push-to-couriers channel plugs in here.
+      // Dispatch stays pull-based (first courier to claim wins); this just wakes the boards up.
+      await this.pingCouriers();
     },
     'business.submitted': async (e) => {
       const admins = await this.db.select({ id: users.id }).from(users).where(eq(users.role, 'admin'));
@@ -185,6 +189,11 @@ export class OutboxHandlers {
   handle(event: DomainEvent): Promise<void> {
     const handler = this.handlers[event.type] as (e: DomainEvent) => Promise<void>;
     return handler(event);
+  }
+
+  private async pingCouriers(): Promise<void> {
+    const couriers = await this.db.select({ id: users.id }).from(users).where(eq(users.role, 'courier'));
+    await this.notifications.ping(couriers.map((c) => c.id), 'delivery.available');
   }
 
   private async staffOf(businessId: string, roles: ('owner' | 'manager' | 'cashier')[]): Promise<string[]> {

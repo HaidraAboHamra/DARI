@@ -43,6 +43,11 @@ export class InsightsController {
     return this.insights.merchantOverview(user, id);
   }
 
+  @Get('merchant/businesses/:id/smart-insights')
+  smart(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.insights.smartInsights(user, id);
+  }
+
   @Get('merchant/businesses/:id/customers')
   customers(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Query(zod(cursorQuerySchema)) q: CursorQuery) {
     return this.insights.customers(user, id, q.cursor, q.limit);

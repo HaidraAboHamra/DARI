@@ -1,6 +1,5 @@
 import type { DeliveryTask, Page } from '@dari/contracts';
 import type { Metadata } from 'next';
-import { AutoRefresh } from '@/components/shell/auto-refresh';
 import { Badge, EmptyState, PageHeader, SectionHeader } from '@/components/ui/primitives';
 import { api } from '@/lib/api';
 import { config } from '@/lib/config';
@@ -39,7 +38,7 @@ export default async function CourierPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <AutoRefresh seconds={10} />
+
       <PageHeader title="لوحة المندوب" subtitle="المهام المتاحة في سلمية — أول من يستلم يحصل على المهمة" />
       <section>
         <SectionHeader title={`مهامي الحالية (${active.length})`} />

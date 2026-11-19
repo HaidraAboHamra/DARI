@@ -36,6 +36,9 @@ export default async function HomePage() {
         <div className="mt-6 max-w-2xl">
           <SearchBar tone="night" />
         </div>
+        <Link href="/assistant" className="mt-5 inline-flex items-center gap-2 rounded-full border border-champagne/40 px-4 py-2 text-sm font-semibold text-champagne hover:bg-white/10">
+          ✦ اسأل مساعد المدينة الذكي
+        </Link>
       </section>
 
       <section aria-labelledby="services">

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { BusinessDetail, BusinessStatus, BusinessSummary, Membership, Page, Vertical } from '@dari/contracts';
-import { aliasedTable, and, desc, eq, inArray, lt, or, type SQL, sql } from 'drizzle-orm';
+import type { BusinessDetail, BusinessStatus, BusinessSummary, MapPoint, Membership, Page, Vertical } from '@dari/contracts';
+import { aliasedTable, and, desc, eq, inArray, isNotNull, lt, or, type SQL, sql } from 'drizzle-orm';
 import { decodeCursor, toPage } from '../../common/pagination/cursor';
 import { DB_READ, type Database, type DbExecutor } from '../../infrastructure/database/database.module';
 import { areas, businesses, businessMembers, categories } from '../../infrastructure/database/schema';
@@ -89,6 +89,19 @@ export class BusinessesRepository {
       .limit(filter.limit + 1);
 
     return toPage(rows, filter.limit, toSummary, (r) => [r.featured, r.business.ratingAvg, r.business.id]);
+  }
+
+  /** Lightweight points for the city map (no joins, capped). */
+  async mapPoints(cityId: string, vertical: Vertical | undefined, limit: number): Promise<MapPoint[]> {
+    const conditions: SQL[] = [eq(businesses.cityId, cityId), eq(businesses.status, 'active'), isNotNull(businesses.lat), isNotNull(businesses.lng)];
+    if (vertical) conditions.push(eq(businesses.vertical, vertical));
+    const rows = await this.read
+      .select({ id: businesses.id, slug: businesses.slug, name: businesses.name, vertical: businesses.vertical, lat: businesses.lat, lng: businesses.lng })
+      .from(businesses)
+      .where(and(...conditions))
+      .orderBy(desc(businesses.ratingAvg))
+      .limit(limit);
+    return rows.map((r) => ({ ...r, lat: r.lat!, lng: r.lng! }));
   }
 
   async listMemberships(userId: string): Promise<Membership[]> {

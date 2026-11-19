@@ -12,6 +12,8 @@ const LINKS = [
   { href: '/news', label: 'أخبار' },
   { href: '/jobs', label: 'وظائف' },
   { href: '/delivery', label: 'توصيل' },
+  { href: '/map', label: 'الخريطة' },
+  { href: '/assistant', label: 'المساعد ✦' },
 ];
 
 export async function SiteHeader() {

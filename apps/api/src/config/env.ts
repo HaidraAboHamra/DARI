@@ -39,6 +39,23 @@ const envSchema = z
     S3_ENDPOINT: z.url().optional(),
     /** Public CDN base for uploaded objects, e.g. https://cdn.dari.sy */
     S3_PUBLIC_URL: z.url().optional(),
+    /** Optional: enables LLM-written replies in the City AI assistant. Without it a rules engine answers. */
+    ANTHROPIC_API_KEY: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v : undefined)),
+    ASSISTANT_MODEL: z.string().default('claude-opus-5-5'),
+    /** Assistant messages per user (or IP) per hour — protects cost at scale. */
+    ASSISTANT_HOURLY_LIMIT: z.coerce.number().int().min(1).max(1000).default(30),
+    /** How OTP codes are delivered: `log` (development only), a generic HTTP SMS API, or WhatsApp Cloud API. */
+    SMS_PROVIDER: z.enum(['log', 'http', 'whatsapp']).default('log'),
+    SMS_HTTP_URL: z.url().optional(),
+    SMS_HTTP_TOKEN: z.string().optional(),
+    SMS_SENDER: z.string().default('DARI'),
+    WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+    WHATSAPP_TOKEN: z.string().optional(),
+    /** Approved WhatsApp authentication template whose body has one {{1}} code parameter. */
+    WHATSAPP_OTP_TEMPLATE: z.string().default('dari_otp'),
     TRUST_PROXY: z
       .enum(['true', 'false'])
       .default('true')
@@ -47,6 +64,15 @@ const envSchema = z
   .refine((env) => env.STORAGE_DRIVER !== 's3' || (env.S3_BUCKET && env.S3_PUBLIC_URL), {
     message: 'S3_BUCKET and S3_PUBLIC_URL are required when STORAGE_DRIVER=s3',
     path: ['S3_BUCKET'],
+  })
+  .refine((env) => env.NODE_ENV !== 'production' || env.SMS_PROVIDER !== 'log', {
+    message: 'Configure a real SMS_PROVIDER (http or whatsapp) in production',
+    path: ['SMS_PROVIDER'],
+  })
+  .refine((env) => env.SMS_PROVIDER !== 'http' || env.SMS_HTTP_URL, { message: 'SMS_HTTP_URL is required for SMS_PROVIDER=http', path: ['SMS_HTTP_URL'] })
+  .refine((env) => env.SMS_PROVIDER !== 'whatsapp' || (env.WHATSAPP_PHONE_NUMBER_ID && env.WHATSAPP_TOKEN), {
+    message: 'WHATSAPP_PHONE_NUMBER_ID and WHATSAPP_TOKEN are required for SMS_PROVIDER=whatsapp',
+    path: ['WHATSAPP_TOKEN'],
   })
   .refine((env) => env.NODE_ENV !== 'production' || env.OTP_DEV_CODE === undefined, {
     message: 'OTP_DEV_CODE must not be set in production',

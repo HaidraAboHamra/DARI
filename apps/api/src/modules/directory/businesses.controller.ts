@@ -13,6 +13,7 @@ import {
   type Page,
   type UpdateBusinessInput,
   updateBusinessSchema,
+  VERTICALS,
 } from '@dari/contracts';
 import { z } from 'zod';
 import type { AuthUser } from '../../common/auth/auth-user';
@@ -21,6 +22,7 @@ import { zod } from '../../common/validation/zod.pipe';
 import { BusinessesService } from './businesses.service';
 
 const statusBody = z.object({ status: z.enum(BUSINESS_STATUSES) });
+const mapQuery = z.object({ city: z.string().trim().min(2).max(60), vertical: z.enum(VERTICALS).optional() });
 const statusQuery = z.object({ status: z.enum(BUSINESS_STATUSES).default('pending_review') });
 
 @Controller({ version: '1' })
@@ -31,6 +33,12 @@ export class BusinessesController {
   @Get('businesses')
   list(@Query(zod(listBusinessesQuerySchema)) query: ListBusinessesQuery): Promise<Page<BusinessSummary>> {
     return this.businesses.list(query);
+  }
+
+  @Public()
+  @Get('businesses/map')
+  map(@Query(zod(mapQuery)) q: z.infer<typeof mapQuery>) {
+    return this.businesses.mapPoints(q.city, q.vertical);
   }
 
   @Public()

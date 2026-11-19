@@ -1,6 +1,5 @@
 import type { Page, ServiceRequest } from '@dari/contracts';
 import { AdvanceServiceButton } from '@/components/services/service-actions';
-import { AutoRefresh } from '@/components/shell/auto-refresh';
 import { Badge, EmptyState, SectionHeader } from '@/components/ui/primitives';
 import { api } from '@/lib/api';
 import { money, timeAgo } from '@/lib/format';
@@ -18,7 +17,7 @@ export default async function ProviderRequestsPage({ params }: { params: Promise
 
   return (
     <div className="flex flex-col gap-8">
-      <AutoRefresh />
+
       <section>
         <SectionHeader title={`أعمالي (${jobs.filter((j) => NEXT[j.status]).length} جارية)`} />
         {jobs.length === 0 ? <p className="text-sm text-muted">لا أعمال بعد. عندما يختار زبون عرضك يظهر هنا مع رقمه وعنوانه.</p> : (

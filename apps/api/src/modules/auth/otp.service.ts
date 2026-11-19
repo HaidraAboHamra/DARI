@@ -35,7 +35,7 @@ export class OtpService {
       .set(this.codeKey(phone), this.hash(phone, code), 'EX', CODE_TTL_SECONDS)
       .del(this.attemptsKey(phone))
       .exec();
-    await this.sms.send(phone, `رمز الدخول إلى داري: ${code}`);
+    await this.sms.send(phone, `رمز الدخول إلى داري: ${code}\nلا تشاركه مع أحد.`, code);
     return { expiresIn: CODE_TTL_SECONDS };
   }
 

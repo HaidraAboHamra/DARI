@@ -1,6 +1,6 @@
 import { type Intent, normalizeArabic, tokenizeArabic, type Vertical, VERTICAL_META } from '@dari/contracts';
 import type { ListingPurpose, PropertyType } from '@dari/contracts';
-import { CHEAP, INTENT_WORDS, NEAR, OPEN_NOW, PROPERTY_HINTS, QUALITY, STOPWORDS, URGENCY } from './intent-lexicon';
+import { CHEAP, INTENT_WORDS, NEAR, OPEN_NOW, PROPERTY_HINTS, QUALITY, STOPWORDS, TIME_WORDS, URGENCY } from './intent-lexicon';
 
 export interface CategoryKeywords {
   id: string;
@@ -61,7 +61,7 @@ export class IntentClassifier {
       else if (CHEAP.has(token)) signals.cheap = true;
       else if (NEAR.has(token)) signals.near = true;
       else if (QUALITY.has(token)) signals.quality = true;
-      else if (STOPWORDS.has(token)) continue;
+      else if (STOPWORDS.has(token) || TIME_WORDS.has(token)) continue;
       else {
         const intentWord = INTENT_WORDS.get(token);
         const categories = this.lookupCategories(token);
@@ -111,6 +111,7 @@ export class IntentClassifier {
       NEAR.has(token) ||
       QUALITY.has(token) ||
       STOPWORDS.has(token) ||
+      TIME_WORDS.has(token) ||
       INTENT_WORDS.has(token) ||
       this.keywordIndex.has(token)
     );

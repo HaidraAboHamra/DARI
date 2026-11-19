@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AcceptQuoteButton, CancelRequestButton } from '@/components/services/service-actions';
-import { AutoRefresh } from '@/components/shell/auto-refresh';
 import { buttonClass } from '@/components/ui/button';
 import { CheckIcon, PhoneIcon } from '@/components/ui/icons';
 import { Badge, PageHeader, SectionHeader, Stars } from '@/components/ui/primitives';
@@ -25,7 +24,6 @@ export default async function ServiceRequestPage({ params }: { params: Promise<{
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
-      {request.status !== 'completed' && request.status !== 'cancelled' && <AutoRefresh seconds={10} />}
       <PageHeader title={request.categoryName} subtitle={`${request.number} · ${URGENCY_LABEL[request.urgency]} · ${timeAgo(request.createdAt)}`}>
         {(request.status === 'open' || request.status === 'assigned') && <CancelRequestButton requestId={request.id} />}
       </PageHeader>

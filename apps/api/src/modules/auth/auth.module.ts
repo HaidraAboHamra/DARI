@@ -6,7 +6,7 @@ import type { Env } from '../../config/env';
 import { AuthController } from './auth.controller';
 import { AuthGuard } from './auth.guard';
 import { OtpService } from './otp.service';
-import { LoggingSmsGateway, SmsGateway } from './sms.gateway';
+import { HttpSmsGateway, LoggingSmsGateway, SmsGateway, WhatsAppCloudGateway } from './sms.gateway';
 import { TokenService } from './token.service';
 
 @Global()
@@ -25,7 +25,20 @@ import { TokenService } from './token.service';
   providers: [
     OtpService,
     TokenService,
-    { provide: SmsGateway, useClass: LoggingSmsGateway },
+    {
+      provide: SmsGateway,
+      inject: [ENV],
+      useFactory: (env: Env): SmsGateway => {
+        switch (env.SMS_PROVIDER) {
+          case 'http':
+            return new HttpSmsGateway(env.SMS_HTTP_URL!, env.SMS_HTTP_TOKEN, env.SMS_SENDER);
+          case 'whatsapp':
+            return new WhatsAppCloudGateway(env.WHATSAPP_PHONE_NUMBER_ID!, env.WHATSAPP_TOKEN!, env.WHATSAPP_OTP_TEMPLATE);
+          default:
+            return new LoggingSmsGateway();
+        }
+      },
+    },
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
   exports: [TokenService],

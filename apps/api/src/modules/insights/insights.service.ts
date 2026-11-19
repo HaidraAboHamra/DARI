@@ -1,10 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { CityKpis, DemandInsight, Page, Vertical } from '@dari/contracts';
-import { and, desc, eq, gte, inArray, lt, or, type SQL, sql } from 'drizzle-orm';
+import type { CityKpis, DemandInsight, Page, SmartInsight, Vertical } from '@dari/contracts';
+import { and, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, or, type SQL, sql } from 'drizzle-orm';
 import type { AuthUser } from '../../common/auth/auth-user';
 import { decodeCursor, toPage } from '../../common/pagination/cursor';
 import { DB_READ, type Database } from '../../infrastructure/database/database.module';
 import {
+  bookings,
   businesses,
   customerRelationships,
   deliveryTasks,
@@ -12,6 +13,7 @@ import {
   jobs,
   orderItems,
   orders,
+  products,
   searchDemandDaily,
   users,
 } from '../../infrastructure/database/schema';
@@ -206,6 +208,76 @@ export class InsightsService {
       segments,
       topProducts: topProducts.map((p) => ({ ...p, revenue: Number(p.revenue) })),
     };
+  }
+
+  /**
+   * "AI for the merchant" (blueprint §15.2), deterministic edition: actionable
+   * alerts computed from the merchant's own data. Cheap enough to run on every visit.
+   */
+  async smartInsights(user: AuthUser, businessId: string): Promise<SmartInsight[]> {
+    await this.access.require(user, businessId, 'orders.view');
+    const since = daysAgo(30);
+    const [lowStock, slow, [cancel], customerRows, [pending], [catalog]] = await Promise.all([
+      this.db
+        .select({ name: products.name, stock: products.stock })
+        .from(products)
+        .where(and(eq(products.businessId, businessId), isNull(products.deletedAt), eq(products.isAvailable, true), isNotNull(products.stock), lte(products.stock, 5)))
+        .limit(10),
+      this.db
+        .select({ name: products.name })
+        .from(products)
+        .where(
+          and(
+            eq(products.businessId, businessId),
+            isNull(products.deletedAt),
+            lt(products.createdAt, daysAgo(14)),
+            sql`not exists (select 1 from ${orderItems} oi join ${orders} o on o.id = oi.order_id
+                 where oi.product_id = ${products.id} and o.created_at >= ${since} and o.status in ('delivered','picked_up'))`,
+          ),
+        )
+        .limit(10),
+      this.db
+        .select({
+          total: sql<number>`count(*)::int`,
+          cancelled: sql<number>`count(*) filter (where ${inArray(orders.status, ['cancelled', 'rejected'])})::int`,
+        })
+        .from(orders)
+        .where(and(eq(orders.businessId, businessId), gte(orders.createdAt, since))),
+      this.db
+        .select({ ordersCount: customerRelationships.ordersCount, lastOrderAt: customerRelationships.lastOrderAt, createdAt: customerRelationships.createdAt })
+        .from(customerRelationships)
+        .where(and(eq(customerRelationships.businessId, businessId), isNotNull(customerRelationships.lastOrderAt))),
+      this.db
+        .select({ n: sql<number>`count(*)::int` })
+        .from(bookings)
+        .where(and(eq(bookings.businessId, businessId), eq(bookings.status, 'pending'), gte(bookings.startsAt, sql`now()`))),
+      this.db
+        .select({ acceptsOrders: businesses.acceptsOrders, products: sql<number>`(select count(*) from ${products} where business_id = ${businesses.id} and deleted_at is null)::int` })
+        .from(businesses)
+        .where(eq(businesses.id, businessId)),
+    ]);
+
+    const out: SmartInsight[] = [];
+    if (catalog?.acceptsOrders && catalog.products === 0) {
+      out.push({ kind: 'no_catalog', severity: 'critical', title: 'تستقبل الطلبات بدون قائمة منتجات', detail: 'أضف منتجاتك ليتمكن الزبائن من الطلب.' });
+    }
+    if (pending?.n) {
+      out.push({ kind: 'pending_bookings', severity: 'warning', title: `${pending.n} حجز بانتظار تأكيدك`, detail: 'التأكيد السريع يرفع نسبة الحضور ورضا الزبائن.' });
+    }
+    if (lowStock.length) {
+      out.push({ kind: 'low_stock', severity: lowStock.some((p) => p.stock === 0) ? 'critical' : 'warning', title: 'مخزون منخفض', detail: lowStock.map((p) => `${p.name} (${p.stock})`).join('، ') });
+    }
+    if (cancel && cancel.total >= 5 && cancel.cancelled / cancel.total > 0.2) {
+      out.push({ kind: 'cancellations', severity: 'warning', title: `نسبة إلغاء مرتفعة: ${Math.round((cancel.cancelled / cancel.total) * 100)}٪`, detail: 'راجع أوقات التحضير وتوفر المنتجات خلال آخر 30 يوماً.' });
+    }
+    const atRisk = customerRows.filter((c) => ['at_risk', 'dormant'].includes(segmentOf(c))).length;
+    if (atRisk) {
+      out.push({ kind: 'at_risk_customers', severity: 'info', title: `${atRisk} زبون لم يطلب منذ أكثر من شهر`, detail: 'جرّب كوبون عودة أو رسالة للمتابعين.' });
+    }
+    if (slow.length) {
+      out.push({ kind: 'slow_product', severity: 'info', title: 'منتجات بلا مبيعات خلال 30 يوماً', detail: slow.map((p) => p.name).join('، ') });
+    }
+    return out;
   }
 
   async customers(user: AuthUser, businessId: string, cursor: string | undefined, limit: number) {

@@ -12,6 +12,7 @@ import {
   type BusinessSummary,
   slugify,
   type UpdateBusinessInput,
+  type Vertical,
 } from '@dari/contracts';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import type { AuthUser } from '../../common/auth/auth-user';
@@ -47,6 +48,11 @@ export class BusinessesService {
   async list(query: ListBusinessesQuery): Promise<Page<BusinessSummary>> {
     const city = await this.cities.getBySlug(query.city);
     return this.repo.listActive({ ...query, cityId: city.id });
+  }
+
+  async mapPoints(citySlug: string, vertical?: Vertical) {
+    const city = await this.cities.getBySlug(citySlug);
+    return this.cache.getOrSet(`map:${city.id}:${vertical ?? 'all'}`, PAGE_CACHE_TTL, () => this.repo.mapPoints(city.id, vertical, 2000));
   }
 
   /** Public business page. Non-active businesses are visible to their members only. */

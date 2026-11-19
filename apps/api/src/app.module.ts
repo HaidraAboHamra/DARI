@@ -7,9 +7,11 @@ import { ConfigModule } from './config/config.module';
 import { loadEnv } from './config/env';
 import { DatabaseModule } from './infrastructure/database/database.module';
 import { QueueModule } from './infrastructure/queue/queue.module';
+import { RealtimeModule } from './infrastructure/realtime/realtime.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AssistantModule } from './modules/assistant/assistant.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
@@ -22,6 +24,7 @@ import { NewsModule } from './modules/news/news.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PropertyModule } from './modules/property/property.module';
+import { RealtimeApiModule } from './modules/realtime/realtime-api.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { SearchModule } from './modules/search/search.module';
 import { ServiceRequestsModule } from './modules/services/services.module';
@@ -49,6 +52,7 @@ export const CORE_MODULES = [
   }),
   DatabaseModule,
   RedisModule,
+  RealtimeModule,
   QueueModule,
   PlatformModule,
   CitiesModule,
@@ -82,6 +86,8 @@ export const CORE_MODULES = [
     MediaModule,
     MarketingModule,
     AdminModule,
+    RealtimeApiModule,
+    AssistantModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: HttpErrorFilter }],
 })

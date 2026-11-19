@@ -1,6 +1,5 @@
-import { type BusinessDetail, nextOrderStatuses, type Order, type Page, TERMINAL_ORDER_STATUSES } from '@dari/contracts';
+import { type BusinessDetail, nextOrderStatuses, type Order, type Page, type SmartInsight, TERMINAL_ORDER_STATUSES } from '@dari/contracts';
 import { OrderActions } from '@/components/orders/order-actions';
-import { AutoRefresh } from '@/components/shell/auto-refresh';
 import { Badge, EmptyState, SectionHeader, Stat } from '@/components/ui/primitives';
 import { api } from '@/lib/api';
 import { money, number, timeAgo } from '@/lib/format';
@@ -20,23 +19,38 @@ interface Overview {
 
 export default async function MerchantDashboard({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [business, orders, overview] = await Promise.all([
+  const [business, orders, overview, insights] = await Promise.all([
     api<BusinessDetail>(`/merchant/businesses/${id}`),
     api<Page<Order>>(`/merchant/businesses/${id}/orders`, { query: { limit: 30 } }),
     api<Overview>(`/merchant/businesses/${id}/insights`).catch(() => null),
+    api<SmartInsight[]>(`/merchant/businesses/${id}/smart-insights`).catch(() => []),
   ]);
   const live = orders.items.filter((o) => !TERMINAL_ORDER_STATUSES.has(o.status));
   const done = orders.items.filter((o) => TERMINAL_ORDER_STATUSES.has(o.status)).slice(0, 10);
 
   return (
     <div className="flex flex-col gap-8">
-      <AutoRefresh />
+
       {overview && (
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Stat label="مبيعات 30 يوم" value={money(overview.revenue)} />
           <Stat label="طلبات مكتملة" value={number(overview.completedOrders)} hint={`من ${number(overview.orders)} طلب`} />
           <Stat label="متوسط الطلب" value={money(overview.averageOrderValue)} />
           <Stat label="الزبائن" value={number(overview.customers)} hint={Object.entries(overview.segments).filter(([, n]) => n).map(([s, n]) => `${SEGMENT_LABEL[s]} ${n}`).join(' · ') || undefined} />
+        </section>
+      )}
+
+      {insights.length > 0 && (
+        <section className="flex flex-col gap-2" aria-label="تنبيهات ذكية">
+          {insights.map((i) => (
+            <div
+              key={i.kind}
+              className={`rounded-[var(--radius-card)] border-s-4 bg-white p-4 shadow-[var(--shadow-card)] ${i.severity === 'critical' ? 'border-danger' : i.severity === 'warning' ? 'border-gold' : 'border-navy/40'}`}
+            >
+              <p className="font-semibold text-navy">✦ {i.title}</p>
+              <p className="text-sm text-muted">{i.detail}</p>
+            </div>
+          ))}
         </section>
       )}
 

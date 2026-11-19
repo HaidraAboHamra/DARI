@@ -1,7 +1,6 @@
 import { type BookableResource, type Booking, nextBookingStatuses, type Page } from '@dari/contracts';
 import { toggleResource } from '@/actions/bookings';
 import { BookingActions } from '@/components/bookings/booking-actions';
-import { AutoRefresh } from '@/components/shell/auto-refresh';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { Badge, EmptyState, SectionHeader } from '@/components/ui/primitives';
 import { api } from '@/lib/api';
@@ -21,7 +20,7 @@ export default async function MerchantBookingsPage({ params }: { params: Promise
 
   return (
     <div className="flex flex-col gap-8">
-      <AutoRefresh />
+
       <section>
         <SectionHeader title={`الحجوزات القادمة (${upcoming.length})`} />
         {upcoming.length === 0 ? (
