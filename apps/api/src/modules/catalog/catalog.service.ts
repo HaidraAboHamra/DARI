@@ -9,6 +9,7 @@ import { products } from '../../infrastructure/database/schema';
 import { CacheService } from '../../infrastructure/redis/cache.service';
 import { BusinessAccessService } from '../directory/business-access.service';
 import { BusinessesService } from '../directory/businesses.service';
+import { PlansService } from '../directory/plans.service';
 import { buildSearchText } from '../directory/search-text';
 
 type ProductRow = typeof products.$inferSelect;
@@ -23,6 +24,7 @@ export class CatalogService {
     private readonly access: BusinessAccessService,
     private readonly businesses: BusinessesService,
     private readonly cache: CacheService,
+    private readonly plans: PlansService,
   ) {}
 
   /** Public menu of an active business, cached and invalidated on every write. */
@@ -50,6 +52,7 @@ export class CatalogService {
 
   async create(user: AuthUser, businessId: string, input: CreateProductInput): Promise<Product> {
     await this.access.require(user, businessId, 'catalog.write');
+    await this.plans.assertCapacity(businessId, 'maxProducts');
     const data = createProductSchema.parse(input);
     const [row] = await this.db
       .insert(products)

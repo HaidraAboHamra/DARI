@@ -5,3 +5,8 @@ export * from './directory';
 export * from './commerce';
 export * from './content';
 export * from './platform';
+export * from './bookings';
+export * from './services';
+export * from './events';
+export * from './property';
+export * from './marketing';

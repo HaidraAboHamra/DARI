@@ -16,6 +16,7 @@ export default async function BusinessConsoleLayout({ children, params }: { chil
   const tabs = [
     { href: `/merchant/${id}`, label: 'الطلبات واللوحة' },
     { href: `/merchant/${id}/products`, label: 'الكتالوج' },
+    { href: `/merchant/${id}/bookings`, label: 'الحجوزات' },
     { href: `/merchant/${id}/customers`, label: 'الزبائن CRM' },
     { href: `/merchant/${id}/team`, label: 'الفريق' },
   ];

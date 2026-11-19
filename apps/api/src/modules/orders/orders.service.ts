@@ -28,7 +28,7 @@ import { BusinessAccessService } from '../directory/business-access.service';
 import { BusinessesService } from '../directory/businesses.service';
 import { roleAllows } from '../directory/business-permissions';
 import { OutboxService } from '../platform/outbox.service';
-import { newOrderNumber } from './order-number';
+import { newReference } from '../../common/reference';
 import { OrdersRepository } from './orders.repository';
 
 const UNIQUE_VIOLATION = '23505';
@@ -88,7 +88,7 @@ export class OrdersService {
         const [order] = await tx
           .insert(orders)
           .values({
-            number: newOrderNumber(),
+            number: newReference('D'),
             cityId: business.cityId,
             businessId: business.id,
             customerId: user.id,

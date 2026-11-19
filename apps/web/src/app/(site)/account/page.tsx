@@ -13,6 +13,7 @@ export const metadata: Metadata = { title: 'حسابي' };
 
 const LINKS = [
   { href: '/orders', label: 'طلباتي' },
+  { href: '/bookings', label: 'حجوزاتي' },
   { href: '/delivery', label: 'طلبات التوصيل' },
   { href: '/account/notifications', label: 'الإشعارات' },
   { href: '/merchant', label: 'لوحة التاجر — Merchant OS' },

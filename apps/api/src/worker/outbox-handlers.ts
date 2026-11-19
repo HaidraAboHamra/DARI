@@ -1,12 +1,32 @@
 import { Injectable } from '@nestjs/common';
 import { VERTICAL_META } from '@dari/contracts';
-import { and, eq, inArray } from 'drizzle-orm';
 import { Inject } from '@nestjs/common';
+import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { DB, type Database } from '../infrastructure/database/database.module';
-import { businesses, businessMembers, users } from '../infrastructure/database/schema';
+import { businesses, businessMembers, customerRelationships, notifications, users } from '../infrastructure/database/schema';
 import type { DomainEvent, DomainEventType, EventOf } from '../modules/platform/domain-events';
 import { DeliveryService } from '../modules/delivery/delivery.service';
 import { NotificationsService } from '../modules/notifications/notifications.service';
+
+const BOOKING_STATUS_AR: Record<string, string> = {
+  confirmed: 'تم تأكيد حجزك',
+  rejected: 'تعذّر قبول حجزك',
+  cancelled: 'تم إلغاء الحجز',
+  completed: 'شكراً لزيارتك',
+  no_show: 'سُجّل الحجز كعدم حضور',
+};
+
+const SERVICE_STATUS_AR: Record<string, string> = {
+  assigned: 'تم تعيين مقدم الخدمة',
+  on_the_way: 'مقدم الخدمة في الطريق',
+  arrived: 'وصل مقدم الخدمة',
+  completed: 'اكتملت الخدمة — قيّم التجربة',
+  cancelled: 'تم إلغاء طلب الخدمة',
+};
+
+const STAFF = ['owner', 'manager', 'cashier'] as const;
+/** Upper bound on providers pinged per request: avoids spam and keeps fan-out O(1). */
+const MAX_PROVIDERS_NOTIFIED = 50;
 
 const ORDER_STATUS_AR: Record<string, string> = {
   accepted: 'تم قبول طلبك',
@@ -86,6 +106,80 @@ export class OutboxHandlers {
         { userId: e.payload.postedById, type: 'job.applied', title: 'متقدم جديد', body: e.payload.title, data: { jobId: e.payload.jobId } },
       ]);
     },
+    'booking.created': async (e) => {
+      const staff = await this.staffOf(e.payload.businessId, [...STAFF]);
+      const when = new Date(e.payload.startsAt).toLocaleString('ar-SY', { timeZone: 'Asia/Damascus', dateStyle: 'medium', timeStyle: 'short' });
+      await this.notifications.notify([
+        ...staff.map((userId) => ({
+          userId,
+          type: 'booking.created',
+          title: `حجز جديد ${e.payload.number}`,
+          body: `${e.payload.resourceName} · ${when}`,
+          data: { bookingId: e.aggregateId, businessId: e.payload.businessId },
+        })),
+        ...(e.payload.status === 'confirmed'
+          ? [{ userId: e.payload.customerId, type: 'booking.status', title: 'تم تأكيد حجزك', body: `${e.payload.resourceName} · ${when}`, data: { bookingId: e.aggregateId } }]
+          : []),
+      ]);
+    },
+    'booking.status_changed': async (e) => {
+      const title = BOOKING_STATUS_AR[e.payload.to];
+      if (!title) return;
+      await this.notifications.notify([{ userId: e.payload.customerId, type: 'booking.status', title, body: `الحجز ${e.payload.number}`, data: { bookingId: e.aggregateId } }]);
+    },
+    'service.requested': async (e) => {
+      const providers = await this.db
+        .select({ id: businesses.id })
+        .from(businesses)
+        .where(
+          e.payload.targetBusinessId
+            ? eq(businesses.id, e.payload.targetBusinessId)
+            : and(eq(businesses.cityId, e.payload.cityId), eq(businesses.categoryId, e.payload.categoryId), eq(businesses.status, 'active')),
+        )
+        .limit(MAX_PROVIDERS_NOTIFIED);
+      if (!providers.length) return;
+      const staff = await this.db
+        .selectDistinct({ userId: businessMembers.userId })
+        .from(businessMembers)
+        .where(and(inArray(businessMembers.businessId, providers.map((p) => p.id)), inArray(businessMembers.role, ['owner', 'manager'])));
+      await this.notifications.notify(
+        staff.map((s) => ({ userId: s.userId, type: 'service.requested', title: 'طلب خدمة جديد قريب منك', body: `الطلب ${e.payload.number}`, data: { requestId: e.aggregateId } })),
+      );
+    },
+    'service.quoted': async (e) => {
+      await this.notifications.notify([
+        { userId: e.payload.customerId, type: 'service.quoted', title: 'وصلك عرض سعر', body: `${e.payload.businessName} · ${e.payload.number}`, data: { requestId: e.aggregateId } },
+      ]);
+    },
+    'service.status_changed': async (e) => {
+      const title = SERVICE_STATUS_AR[e.payload.to];
+      if (title) {
+        await this.notifications.notify([{ userId: e.payload.customerId, type: 'service.status', title, body: `الطلب ${e.payload.number}`, data: { requestId: e.aggregateId } }]);
+      }
+      if (e.payload.to === 'cancelled' && e.payload.providerBusinessId) {
+        const staff = await this.staffOf(e.payload.providerBusinessId, ['owner', 'manager']);
+        await this.notifications.notify(staff.map((userId) => ({ userId, type: 'service.status', title: 'ألغى الزبون الطلب', body: e.payload.number, data: { requestId: e.aggregateId } })));
+      }
+    },
+    'ticket.purchased': async (e) => {
+      await this.notifications.notify([
+        { userId: e.payload.organizerId, type: 'ticket.purchased', title: `حجز ${e.payload.quantity} مقعد`, body: e.payload.title, data: { eventId: e.payload.eventId } },
+      ]);
+    },
+    'listing.lead': async (e) => {
+      await this.notifications.notify([
+        { userId: e.payload.ownerId, type: 'listing.lead', title: 'طلب معاينة جديد', body: e.payload.title, data: { listingId: e.payload.listingId } },
+      ]);
+    },
+    'broadcast.created': async (e) => {
+      // Set-based fan-out inside the database: scales to large audiences without loading them in memory.
+      await this.db.execute(sql`
+        insert into ${notifications} (id, user_id, type, title, body, data, created_at)
+        select uuid_generate_v7(), ${customerRelationships.userId}, 'broadcast', ${`${e.payload.businessName}: ${e.payload.title}`}, ${e.payload.body},
+               ${JSON.stringify({ businessId: e.payload.businessId })}::jsonb, now()
+        from ${customerRelationships}
+        where ${and(eq(customerRelationships.businessId, e.payload.businessId), isNotNull(customerRelationships.consentedAt), isNull(customerRelationships.revokedAt))}`);
+    },
   };
 
   handle(event: DomainEvent): Promise<void> {
@@ -94,6 +188,7 @@ export class OutboxHandlers {
   }
 
   private async staffOf(businessId: string, roles: ('owner' | 'manager' | 'cashier')[]): Promise<string[]> {
+    if (!roles.length) return [];
     const rows = await this.db
       .select({ userId: businessMembers.userId })
       .from(businessMembers)

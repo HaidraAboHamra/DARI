@@ -132,8 +132,65 @@ export const ANALYTICS_EVENTS = [
   'review.created',
   'job.applied',
   'delivery.requested',
+  'ticket.purchased',
+  'listing.viewing_requested',
+  'assistant.message',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
-export const ENTITY_TYPES = ['business', 'product', 'job', 'news', 'order', 'delivery'] as const;
+export const ENTITY_TYPES = ['business', 'product', 'job', 'news', 'order', 'delivery', 'event', 'listing', 'booking', 'service_request'] as const;
 export type EntityType = (typeof ENTITY_TYPES)[number];
+
+// ── Bookings (blueprint §10) ──────────────────────────────────────────────
+export const RESOURCE_KINDS = ['appointment', 'court', 'room', 'venue', 'farm', 'table', 'seat'] as const;
+export type ResourceKind = (typeof RESOURCE_KINDS)[number];
+
+/** `slot` = bookable by time slots within a day; `night` = by nights (hotels, farms, chalets). */
+export const BOOKING_UNITS = ['slot', 'night'] as const;
+export type BookingUnit = (typeof BOOKING_UNITS)[number];
+
+export const BOOKING_STATUSES = ['pending', 'confirmed', 'rejected', 'cancelled', 'completed', 'no_show'] as const;
+export type BookingStatus = (typeof BOOKING_STATUSES)[number];
+
+// ── Provider OS / service requests (blueprint §9) ─────────────────────────
+export const SERVICE_URGENCIES = ['now', 'today', 'scheduled'] as const;
+export type ServiceUrgency = (typeof SERVICE_URGENCIES)[number];
+
+export const SERVICE_REQUEST_STATUSES = ['open', 'assigned', 'on_the_way', 'arrived', 'completed', 'cancelled'] as const;
+export type ServiceRequestStatus = (typeof SERVICE_REQUEST_STATUSES)[number];
+
+export const QUOTE_STATUSES = ['pending', 'accepted', 'declined', 'withdrawn'] as const;
+export type QuoteStatus = (typeof QUOTE_STATUSES)[number];
+
+// ── Events & trips (blueprint §10, §5.9) ──────────────────────────────────
+export const EVENT_KINDS = ['event', 'trip'] as const;
+export type EventKind = (typeof EVENT_KINDS)[number];
+
+export const TICKET_STATUSES = ['active', 'cancelled', 'checked_in'] as const;
+export type TicketStatus = (typeof TICKET_STATUSES)[number];
+
+// ── Real estate (blueprint §12.2) ─────────────────────────────────────────
+export const LISTING_PURPOSES = ['sale', 'rent'] as const;
+export type ListingPurpose = (typeof LISTING_PURPOSES)[number];
+
+export const PROPERTY_TYPES = ['apartment', 'house', 'land', 'shop', 'office', 'farm'] as const;
+export type PropertyType = (typeof PROPERTY_TYPES)[number];
+
+export const LISTING_STATUSES = ['active', 'sold', 'rented', 'archived'] as const;
+export type ListingStatus = (typeof LISTING_STATUSES)[number];
+
+export const LEAD_STATUSES = ['new', 'contacted', 'closed'] as const;
+export type LeadStatus = (typeof LEAD_STATUSES)[number];
+
+// ── Marketing & monetization (blueprint §7, §17; financial doc §8) ───────
+export const COUPON_KINDS = ['percent', 'amount'] as const;
+export type CouponKind = (typeof COUPON_KINDS)[number];
+
+export const PLAN_IDS = ['free', 'starter', 'business', 'pro'] as const;
+export type PlanId = (typeof PLAN_IDS)[number];
+
+export const PAYMENT_METHODS = ['cash', 'transfer', 'mobile_wallet'] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+export const FAVORITE_TYPES = ['business', 'listing', 'event'] as const;
+export type FavoriteType = (typeof FAVORITE_TYPES)[number];

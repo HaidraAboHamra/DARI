@@ -12,6 +12,7 @@ export const createOrderSchema = z
     fulfillment: z.enum(FULFILLMENT_TYPES),
     address: placeSchema.optional(),
     notes: z.string().trim().max(500).optional(),
+    couponCode: z.string().trim().toUpperCase().max(20).optional(),
   })
   .refine((o) => o.fulfillment === 'pickup' || o.address !== undefined, {
     message: 'عنوان التوصيل مطلوب',

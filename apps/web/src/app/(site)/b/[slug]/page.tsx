@@ -1,8 +1,9 @@
-import { type BusinessDetail, isOpenAt, type Page, type Product, type Review, VERTICAL_META } from '@dari/contracts';
+import { type BookableResource, type BusinessDetail, isOpenAt, type Page, type Product, type Review, VERTICAL_META } from '@dari/contracts';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { TrackView } from '@/components/analytics/track-view';
+import { BookingWidget } from '@/components/bookings/booking-widget';
 import { ServiceGlyph } from '@/components/brand/service-icon';
 import { ClockIcon, PinIcon } from '@/components/ui/icons';
 import { Badge, SectionHeader, Stars } from '@/components/ui/primitives';
@@ -34,8 +35,9 @@ export default async function BusinessPage({ params }: { params: Promise<Params>
   const business = await getBusiness(slug);
   if (!business) notFound();
 
-  const [products, reviews, user] = await Promise.all([
+  const [products, resources, reviews, user] = await Promise.all([
     api<Product[]>(`/businesses/${business.id}/products`, { revalidate: 60 }).catch(() => []),
+    api<BookableResource[]>(`/businesses/${business.id}/resources`, { revalidate: 30 }).catch(() => []),
     api<Page<Review>>(`/businesses/${business.id}/reviews`, { query: { limit: 10 }, revalidate: 60 }),
     currentUser(),
   ]);
@@ -76,6 +78,13 @@ export default async function BusinessPage({ params }: { params: Promise<Params>
           <ContactButtons businessId={business.id} phone={business.phone} whatsapp={business.whatsapp} location={business.location} />
         </div>
       </section>
+
+      {resources.length > 0 && (
+        <section>
+          <SectionHeader title="احجز موعدك" />
+          <BookingWidget resources={resources} />
+        </section>
+      )}
 
       {products.length > 0 && (
         <section>

@@ -15,6 +15,12 @@ export const BUSINESS_PERMISSIONS = {
   'customers.view': ['owner', 'manager', 'marketing'],
   'jobs.write': ['owner', 'manager'],
   'analytics.view': ['owner', 'manager', 'accountant', 'marketing'],
+  'bookings.manage': ['owner', 'manager', 'cashier'],
+  'resources.write': ['owner', 'manager'],
+  'services.respond': ['owner', 'manager', 'cashier', 'delivery'],
+  'marketing.write': ['owner', 'manager', 'marketing'],
+  'listings.write': ['owner', 'manager', 'marketing'],
+  'events.manage': ['owner', 'manager', 'marketing', 'cashier'],
 } as const satisfies Record<string, readonly BusinessRole[]>;
 
 export type BusinessPermission = keyof typeof BUSINESS_PERMISSIONS;

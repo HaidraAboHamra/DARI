@@ -15,7 +15,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import type { OpeningHours } from '@dari/contracts';
 import { createdAt, pk, updatedAt } from './_shared';
-import { businessRoleEnum, businessStatusEnum, verticalEnum } from './enums';
+import { businessRoleEnum, businessStatusEnum, planEnum, verticalEnum } from './enums';
 import { areas, categories, cities } from './geo';
 import { users } from './identity';
 
@@ -45,6 +45,10 @@ export const businesses = pgTable(
     /** Overrides the city delivery fee when set. */
     deliveryFee: integer(),
     verifiedAt: timestamp({ withTimezone: true }),
+    plan: planEnum().notNull().default('free'),
+    planExpiresAt: timestamp({ withTimezone: true }),
+    /** Paid "featured" placement (blueprint §17): ranking boost + badge until this time. */
+    featuredUntil: timestamp({ withTimezone: true }),
     ratingAvg: real().notNull().default(0),
     ratingCount: integer().notNull().default(0),
     /** Normalized name + category + description, indexed with pg_trgm. */

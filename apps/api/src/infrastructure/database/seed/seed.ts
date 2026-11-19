@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { createDatabase, createPool, type Database } from '../database.module';
 import * as s from '../schema';
 import { AREAS, ARTICLES, BUSINESSES, CATEGORIES, JOBS, SALAMIYAH } from './seed-data';
+import { EVENTS, LISTINGS, RESOURCES } from './seed-extras';
 
 /** Demo accounts (log in with the dev OTP code). */
 export const SEED_USERS = {
@@ -17,7 +18,10 @@ export const SEED_USERS = {
 
 export async function seed(db: Database): Promise<{ skipped: boolean }> {
   const [existing] = await db.select().from(s.cities).where(eq(s.cities.slug, SALAMIYAH.slug));
-  if (existing) return { skipped: true };
+  if (existing) {
+    const extras = await seedExtras(db);
+    return { skipped: !extras };
+  }
 
   await db.transaction(async (tx) => {
     const [city] = await tx.insert(s.cities).values(SALAMIYAH).returning();
@@ -111,7 +115,60 @@ export async function seed(db: Database): Promise<{ skipped: boolean }> {
       })),
     );
   });
+  await seedExtras(db);
   return { skipped: false };
+}
+
+/** Bookable resources, events/trips and property listings. Idempotent: runs once per database. */
+export async function seedExtras(db: Database): Promise<boolean> {
+  const [already] = await db.select({ id: s.bookableResources.id }).from(s.bookableResources).limit(1);
+  if (already) return false;
+  const [city] = await db.select().from(s.cities).where(eq(s.cities.slug, SALAMIYAH.slug));
+  const [admin] = await db.select().from(s.users).where(eq(s.users.phone, SEED_USERS.admin.phone));
+  if (!city || !admin) return false;
+  const all = await db.select({ id: s.businesses.id, name: s.businesses.name }).from(s.businesses).where(eq(s.businesses.cityId, city.id));
+  const businessBy = new Map(all.map((b) => [b.name, b.id]));
+  const areaRows = await db.select().from(s.areas).where(eq(s.areas.cityId, city.id));
+  const areaBy = new Map(areaRows.map((a) => [a.slug, a]));
+
+  await db.transaction(async (tx) => {
+    await tx.insert(s.bookableResources).values(
+      RESOURCES.filter((r) => businessBy.has(r.business)).map(({ business, ...r }) => ({
+        ...r,
+        businessId: businessBy.get(business)!,
+        weeklyHours: r.weeklyHours ?? [],
+      })),
+    );
+    const now = Date.now();
+    await tx.insert(s.cityEvents).values(
+      EVENTS.map(({ inDays, hours, ...e }) => {
+        const startsAt = new Date(now + inDays * 86_400_000);
+        startsAt.setUTCHours(15, 0, 0, 0);
+        return {
+          ...e,
+          destination: 'destination' in e ? e.destination : null,
+          cityId: city.id,
+          organizerId: admin.id,
+          businessId: e.kind === 'trip' ? (businessBy.get('رحلات الوادي') ?? null) : null,
+          startsAt,
+          endsAt: new Date(startsAt.getTime() + hours * 3_600_000),
+          searchText: buildSearchText(e.title, e.description, e.venue),
+        };
+      }),
+    );
+    await tx.insert(s.propertyListings).values(
+      LISTINGS.map(({ area, ...l }) => ({
+        ...l,
+        cityId: city.id,
+        ownerId: admin.id,
+        businessId: businessBy.get('مكتب الريان العقاري') ?? null,
+        areaId: areaBy.get(area)?.id ?? null,
+        address: `${areaBy.get(area)?.nameAr ?? ''}، سلمية`,
+        searchText: buildSearchText(l.title, l.description, areaBy.get(area)?.nameAr),
+      })),
+    );
+  });
+  return true;
 }
 
 if (require.main === module) {

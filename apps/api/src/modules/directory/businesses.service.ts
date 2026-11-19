@@ -25,6 +25,7 @@ import { OutboxService } from '../platform/outbox.service';
 import { UsersService } from '../users/users.service';
 import { BusinessAccessService } from './business-access.service';
 import { BusinessesRepository } from './businesses.repository';
+import { PlansService } from './plans.service';
 import { buildSearchText } from './search-text';
 
 const PAGE_CACHE_TTL = 60;
@@ -40,6 +41,7 @@ export class BusinessesService {
     private readonly cache: CacheService,
     private readonly outbox: OutboxService,
     private readonly audit: AuditService,
+    private readonly plans: PlansService,
   ) {}
 
   async list(query: ListBusinessesQuery): Promise<Page<BusinessSummary>> {
@@ -210,6 +212,7 @@ export class BusinessesService {
     const member = await this.users.findOrCreateByPhone(input.phone);
     const existing = await this.access.roleOf(member.id, businessId);
     if (existing === 'owner') throw new ConflictError('لا يمكن تغيير دور المالك');
+    if (!existing) await this.plans.assertCapacity(businessId, 'maxMembers');
 
     await this.db.transaction(async (tx) => {
       await tx

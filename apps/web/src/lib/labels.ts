@@ -1,4 +1,4 @@
-import type { DeliveryStatus, DeliveryTaskType, EmploymentType, OrderStatus } from '@dari/contracts';
+import type { BookingStatus, DeliveryStatus, DeliveryTaskType, EmploymentType, OrderStatus } from '@dari/contracts';
 
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   pending: 'بانتظار القبول',
@@ -59,3 +59,29 @@ export const SEGMENT_LABEL: Record<string, string> = {
   dormant: 'خامل',
   occasional: 'عرضي',
 };
+
+
+export const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
+  pending: 'بانتظار التأكيد',
+  confirmed: 'مؤكد',
+  rejected: 'مرفوض',
+  cancelled: 'ملغي',
+  completed: 'مكتمل',
+  no_show: 'لم يحضر',
+};
+
+export const BOOKING_ACTION_LABEL: Record<BookingStatus, string> = {
+  pending: 'تعليق',
+  confirmed: 'تأكيد',
+  rejected: 'رفض',
+  cancelled: 'إلغاء',
+  completed: 'تم',
+  no_show: 'لم يحضر',
+};
+
+const when = new Intl.DateTimeFormat('ar-SY', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Damascus' });
+const day = new Intl.DateTimeFormat('ar-SY', { dateStyle: 'medium', timeZone: 'Asia/Damascus' });
+
+export function bookingWhen(b: { unit: 'slot' | 'night'; startsAt: string; endsAt: string }): string {
+  return b.unit === 'slot' ? when.format(new Date(b.startsAt)) : `${day.format(new Date(b.startsAt))} ← ${day.format(new Date(b.endsAt))}`;
+}

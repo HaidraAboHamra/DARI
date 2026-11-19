@@ -52,6 +52,8 @@ export const orders = pgTable(
     fulfillment: fulfillmentEnum().notNull(),
     subtotal: integer().notNull(),
     deliveryFee: integer().notNull().default(0),
+    discount: integer().notNull().default(0),
+    couponId: uuid(),
     total: integer().notNull(),
     currency: text().notNull(),
     address: jsonb().$type<Place>(),

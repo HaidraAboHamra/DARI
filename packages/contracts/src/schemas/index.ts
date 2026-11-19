@@ -6,3 +6,8 @@ export * from './orders';
 export * from './delivery';
 export * from './content';
 export * from './search';
+export * from './bookings';
+export * from './services';
+export * from './events';
+export * from './property';
+export * from './marketing';

@@ -10,6 +10,7 @@ import { QueueModule } from './infrastructure/queue/queue.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { BookingsModule } from './modules/bookings/bookings.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { DeliveryModule } from './modules/delivery/delivery.module';
 import { InsightsModule } from './modules/insights/insights.module';
@@ -68,6 +69,7 @@ export const CORE_MODULES = [
     AnalyticsModule,
     InsightsModule,
     NotificationsModule,
+    BookingsModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: HttpErrorFilter }],
 })
