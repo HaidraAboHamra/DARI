@@ -39,3 +39,6 @@ jobs:
       - name: Build
         run: pnpm -r build
         env: { API_URL: http://localhost:4000/api/v1 }
+      - name: Bundle the mobile app (Android/Hermes) to catch Metro resolution errors
+        run: pnpm --filter @dari/mobile bundle:check
+        env: { CI: '1' }

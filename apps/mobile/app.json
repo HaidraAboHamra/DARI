@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "داري",
+    "slug": "dari",
+    "scheme": "dari",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F6F0E0",
+    "primaryColor": "#C9A24B",
+    "ios": {
+      "bundleIdentifier": "sy.dari.app",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "لمسح رموز QR للتذاكر وإرفاق الصور",
+        "NSPhotoLibraryUsageDescription": "لإرفاق صور المنتجات والعقارات"
+      }
+    },
+    "android": {
+      "package": "sy.dari.app",
+      "permissions": ["POST_NOTIFICATIONS"]
+    },
+    "web": { "bundler": "metro", "output": "single" },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      "expo-status-bar",
+      ["expo-localization", { "supportsRTL": true, "forcesRTL": true }],
+      ["expo-notifications", { "color": "#C9A24B" }],
+      ["expo-image-picker", { "photosPermission": "لإرفاق صور المنتجات والعقارات" }]
+    ],
+    "extra": { "supportsRTL": true, "forcesRTL": true },
+    "experiments": { "typedRoutes": false }
+  }
+}

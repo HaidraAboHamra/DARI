@@ -36,6 +36,13 @@
       "when": 1795121178693,
       "tag": "0004_uuid_v7",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795123607645,
+      "tag": "0005_device_tokens",
+      "breakpoints": true
     }
   ]
 }

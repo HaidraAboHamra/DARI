@@ -20,6 +20,19 @@ describe('platform (e2e)', () => {
   });
   afterAll(() => h.close());
 
+  it('lets browser clients preflight every REST verb the app uses (Expo web build)', async () => {
+    const preflight = await h.app.inject({
+      method: 'OPTIONS',
+      url: '/api/v1/orders/x/status',
+      headers: { origin: 'http://localhost:3000', 'access-control-request-method': 'PATCH', 'access-control-request-headers': 'content-type,authorization' },
+    });
+    expect(preflight.statusCode).toBe(204);
+    expect(preflight.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+    expect(String(preflight.headers['access-control-allow-methods'])).toContain('PATCH');
+    const foreign = await h.app.inject({ method: 'OPTIONS', url: '/api/v1/orders', headers: { origin: 'https://evil.example', 'access-control-request-method': 'POST' } });
+    expect(foreign.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
   it('onboards a business through verification before it becomes public', async () => {
     const owner = await login(h.app, '0988123123');
     const created = await h.app.inject({

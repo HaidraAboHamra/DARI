@@ -53,5 +53,7 @@ describe('City AI assistant & smart insights (e2e)', () => {
     await h.app.inject({ method: 'PATCH', url: `/api/v1/merchant/businesses/${pizzeria.id}/products/${cola.id}`, headers: auth(admin), payload: { stock: 2 } });
     const insights = (await h.app.inject({ method: 'GET', url: `/api/v1/merchant/businesses/${pizzeria.id}/smart-insights`, headers: auth(admin) })).json<SmartInsight[]>();
     expect(insights).toEqual(expect.arrayContaining([expect.objectContaining({ kind: 'low_stock', detail: 'كولا (2)' })]));
+    // The pizzeria has a menu, so it must never be told it has none (regression: correlated subquery bound to the wrong table).
+    expect(insights.map((i) => i.kind)).not.toContain('no_catalog');
   });
 });

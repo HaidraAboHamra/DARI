@@ -57,3 +57,33 @@ describe('metrics', () => {
     }
   });
 });
+
+describe('phone push', () => {
+  it('registers devices and pushes notifications to them, forgetting dead tokens', async () => {
+    const { PushGateway } = await import('../src/infrastructure/push/push.gateway');
+    const h = await createHarness();
+    try {
+      const token = await loginAs(h.app, 'citizen');
+      const headers = { authorization: `Bearer ${token}` };
+      const reg = (t: string) => h.app.inject({ method: 'PUT', url: '/api/v1/me/devices', headers, payload: { token: t, platform: 'android' } });
+      expect((await reg('ExponentPushToken[alive-1234567]')).statusCode).toBe(204);
+      expect((await reg('ExponentPushToken[dead-12345678]')).statusCode).toBe(204);
+
+      const sent: string[] = [];
+      const gateway = h.app.get(PushGateway);
+      gateway.send = async (messages) => {
+        sent.push(...messages.map((m) => `${m.token}|${m.title}`));
+        return { invalidTokens: ['ExponentPushToken[dead-12345678]'] };
+      };
+      const me = (await h.app.inject({ method: 'GET', url: '/api/v1/me', headers })).json();
+      await h.app.get(NotificationsService).notify([{ userId: me.id, type: 'order.status', title: 'طلبك جاهز', body: 'D-1' }]);
+      expect(sent.sort()).toEqual(['ExponentPushToken[alive-1234567]|طلبك جاهز', 'ExponentPushToken[dead-12345678]|طلبك جاهز']);
+
+      sent.length = 0;
+      await h.app.get(NotificationsService).notify([{ userId: me.id, type: 'order.status', title: 'تم التوصيل', body: 'D-1' }]);
+      expect(sent).toEqual(['ExponentPushToken[alive-1234567]|تم التوصيل']);
+    } finally {
+      await h.close();
+    }
+  });
+});

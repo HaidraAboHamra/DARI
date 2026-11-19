@@ -11,7 +11,7 @@ Vibe Code
 
 | الطبقة | المحتوى |
 |---|---|
-| **المواطن** (PWA) | «شو بدك اليوم؟»، بحث بالعامية يفهم النية والاستعجال ويتحمل الأخطاء الإملائية، استكشاف حسب القطاع، خريطة المدينة، صفحات الأنشطة (اتصال/واتساب/موقع، مفتوح الآن، عروض، تقييمات تفصيلية، متابعة، مفضلة)، سلة وطلب مع كوبونات، تتبع الطلب لحظياً، «اطلب مجدداً»، حجز مواعيد/ملاعب/فنادق/مزارع، طلب خدمة مهنية واستلام عروض أسعار، فعاليات ورحلات بتذاكر QR، عقارات مع طلب معاينة، وظائف والتقديم عليها، توصيل لأي شيء، أخبار المدينة، مساعد المدينة الذكي، إشعارات فورية |
+| **المواطن** (PWA + تطبيق موبايل iOS/Android) | «شو بدك اليوم؟»، بحث بالعامية يفهم النية والاستعجال ويتحمل الأخطاء الإملائية، استكشاف حسب القطاع، خريطة المدينة، صفحات الأنشطة (اتصال/واتساب/موقع، مفتوح الآن، عروض، تقييمات تفصيلية، متابعة، مفضلة)، سلة وطلب مع كوبونات، تتبع الطلب لحظياً، «اطلب مجدداً»، حجز مواعيد/ملاعب/فنادق/مزارع، طلب خدمة مهنية واستلام عروض أسعار، فعاليات ورحلات بتذاكر QR، عقارات مع طلب معاينة، وظائف والتقديم عليها، توصيل لأي شيء، أخبار المدينة، مساعد المدينة الذكي، إشعارات فورية |
 | **Merchant OS** | تسجيل النشاط والتحقق، طلبات حية مع أزرار الحالة، الكتالوج والمخزون واستيراد CSV، الحجوزات والموارد، طلبات الخدمة وعروض الأسعار، CRM بشرائح الزبائن، Customer Connect (QR بموافقة) ورسائل للمتابعين، الكوبونات، الباقة والاستخدام، الفريق والصلاحيات (8 أدوار)، تنبيهات ذكية، صور الشعار والغلاف والمنتجات |
 | **المندوب** | لوحة مهام المدينة لحظياً، استلام ذري (مندوب واحد فقط)، تحديث الحالة ينعكس على الطلب، كشف أرباح ومؤشرات جودة |
 | **الإدارة / ذكاء المدينة** | مؤشرات المدينة (North Star = احتياجات مُنجزة)، البحث بلا نتيجة، الأكثر بحثاً، محرك الفرص، طابور التحقق، تسجيل دفعات الاشتراك، الظهور المميز، أدوار الفريق، محرر الأخبار |
@@ -22,6 +22,7 @@ Vibe Code
 apps/
   api/        NestJS + Fastify — modular monolith (HTTP) + background worker (same image)
   web/        Next.js 16 (App Router, RTL Arabic PWA) — BFF with httpOnly sessions
+  mobile/     Expo + React Native app (iOS/Android) — citizen, merchant live orders, courier
 packages/
   contracts/  Shared domain: enums, zod schemas, types, Arabic text normalization,
               order/booking state machines, availability, plans, coupons — one source of truth
@@ -54,6 +55,15 @@ pnpm dev                                    # api :4000, worker, web :3000
 ```
 
 Optional: set `ANTHROPIC_API_KEY` to let Claude phrase the City AI assistant's answers (it is grounded in Dari's own search results; without a key a rules engine answers). Production OTP delivery: `SMS_PROVIDER=http|whatsapp` (see `apps/api/.env.example`).
+
+### Mobile app (Expo)
+```bash
+cp apps/mobile/.env.example apps/mobile/.env
+# On a real phone set EXPO_PUBLIC_API_URL to your computer's LAN IP, e.g. http://192.168.1.20:4000/api/v1
+pnpm --filter @dari/mobile start      # scan the QR with Expo Go, or press a / i for emulators
+pnpm --filter @dari/mobile web        # browser preview (add http://localhost:8081 to the API's CORS_ORIGINS)
+```
+Push notifications need an EAS project (`eas init`) and `PUSH_PROVIDER=expo` on the API. Store builds: `eas build -p android|ios`.
 
 ### Demo accounts
 Login is by phone + OTP. In development the code is always **123456**.
