@@ -38,14 +38,15 @@ How the code maps to the *Salamiyah City OS Master Blueprint* and the
 | Monetization: plans & limits, manual payment recording, featured placement, coupons | ✅ |
 | Realtime updates (SSE) | ✅ |
 | Online card / e-wallet payments | ⬜ — cash on delivery + manually recorded transfers today; add a payment-provider port when a Syrian provider is chosen |
-| Native push notifications (FCM/APNs) | ⬜ — in-app + live SSE today; push plugs into the same outbox handlers |
-| Native iOS/Android apps | ⬜ — the PWA installs on phones; React Native/Expo can reuse `@dari/contracts` |
+| Native push notifications (FCM/APNs via Expo) | ✅ — `PushGateway` port, device registry, dead-token cleanup (`PUSH_PROVIDER=expo`) |
+| Native iOS/Android app | ✅ — `apps/mobile` (Expo): citizen, merchant live orders, courier board; shares `@dari/contracts` |
 | Zone-based dispatch / ETA / PostGIS nearest search | ⬜ — pull-based board today (ARCHITECTURE §7) |
 | Seasonal marketplace collections (olive season, Eid) | 🟡 — expressible through categories, events and jobs; no dedicated "season" entity |
 | Custom domains for merchant websites | ⬜ — every business has a shareable page + QR today |
 
 ## Production readiness checklist
 - [ ] Choose and configure the SMS/WhatsApp OTP provider (adapters exist)
+- [ ] Mobile release: EAS project id, app icons/splash, store listings, `PUSH_PROVIDER=expo` + `EXPO_ACCESS_TOKEN`, test on real iOS/Android devices
 - [ ] Object storage bucket + CDN (`STORAGE_DRIVER=s3`)
 - [ ] Managed Postgres (replica, PgBouncer, PITR), managed Redis
 - [ ] Error tracking (Sentry) and dashboards/alerts on `/metrics`

@@ -25,9 +25,10 @@ export class StreamController {
       connection: 'keep-alive',
       'x-accel-buffering': 'no',
     });
-    res.write(`retry: 5000\n\nevent: ready\ndata: {}\n\n`);
-
+    // Subscribe before announcing `ready`: anything published after the client sees `ready` must reach it.
     const unsubscribe = await this.hub.subscribe(user.id, (message) => res.write(`event: message\ndata: ${message}\n\n`));
+    if (req.raw.destroyed) return void unsubscribe(); // client left while we were subscribing
+    res.write(`retry: 5000\n\nevent: ready\ndata: {}\n\n`);
     const heartbeat = setInterval(() => res.write(`: ping\n\n`), HEARTBEAT_MS);
     req.raw.on('close', () => {
       clearInterval(heartbeat);

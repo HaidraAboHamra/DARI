@@ -1,5 +1,16 @@
 /** Arabic UI copy shared by every client (web, mobile). */
-import type { BookingStatus, DeliveryStatus, DeliveryTaskType, EmploymentType, OrderStatus } from '../enums';
+import type {
+  BookingStatus,
+  DeliveryStatus,
+  DeliveryTaskType,
+  EmploymentType,
+  LeadStatus,
+  ListingPurpose,
+  OrderStatus,
+  PropertyType,
+  ServiceRequestStatus,
+  ServiceUrgency,
+} from '../enums';
 
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   pending: 'بانتظار القبول',
@@ -87,7 +98,7 @@ export function bookingWhen(b: { unit: 'slot' | 'night'; startsAt: string; endsA
   return b.unit === 'slot' ? when.format(new Date(b.startsAt)) : `${day.format(new Date(b.startsAt))} ← ${day.format(new Date(b.endsAt))}`;
 }
 
-export const SERVICE_STATUS_LABEL: Record<string, string> = {
+export const SERVICE_STATUS_LABEL: Record<ServiceRequestStatus, string> = {
   open: 'بانتظار العروض',
   assigned: 'تم اختيار مقدم الخدمة',
   on_the_way: 'في الطريق',
@@ -96,15 +107,15 @@ export const SERVICE_STATUS_LABEL: Record<string, string> = {
   cancelled: 'ملغي',
 };
 
-export const SERVICE_NEXT_LABEL: Record<string, string> = {
+export const SERVICE_NEXT_LABEL: Partial<Record<ServiceRequestStatus, string>> = {
   on_the_way: 'انطلقت إلى الزبون',
   arrived: 'وصلت',
   completed: 'تم إنجاز العمل',
 };
 
-export const URGENCY_LABEL: Record<string, string> = { now: 'الآن', today: 'اليوم', scheduled: 'بموعد' };
+export const URGENCY_LABEL: Record<ServiceUrgency, string> = { now: 'الآن', today: 'اليوم', scheduled: 'بموعد' };
 
-export const PROPERTY_TYPE_LABEL: Record<string, string> = {
+export const PROPERTY_TYPE_LABEL: Record<PropertyType, string> = {
   apartment: 'شقة',
   house: 'منزل',
   land: 'أرض',
@@ -112,8 +123,8 @@ export const PROPERTY_TYPE_LABEL: Record<string, string> = {
   office: 'مكتب',
   farm: 'مزرعة',
 };
-export const PURPOSE_LABEL: Record<string, string> = { sale: 'للبيع', rent: 'للإيجار' };
-export const LEAD_STATUS_LABEL: Record<string, string> = { new: 'جديد', contacted: 'تم التواصل', closed: 'مغلق' };
+export const PURPOSE_LABEL: Record<ListingPurpose, string> = { sale: 'للبيع', rent: 'للإيجار' };
+export const LEAD_STATUS_LABEL: Record<LeadStatus, string> = { new: 'جديد', contacted: 'تم التواصل', closed: 'مغلق' };
 
 const eventDate = new Intl.DateTimeFormat('ar-SY', { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Damascus' });
 export function eventWhen(iso: string): string {

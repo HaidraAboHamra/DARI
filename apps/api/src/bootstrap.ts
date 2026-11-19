@@ -31,7 +31,14 @@ export async function createApp(env: Env, options: { logger?: boolean } = {}): P
   if (options.logger !== false) app.useLogger(app.get(Logger));
 
   await app.register(helmet, { contentSecurityPolicy: false });
-  await app.register(cors, { origin: env.CORS_ORIGINS, credentials: true, maxAge: 600 });
+  // Browser clients (the Expo web build) call the API directly; @fastify/cors only allows GET/HEAD/POST by default.
+  await app.register(cors, {
+    origin: env.CORS_ORIGINS,
+    credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['content-type', 'authorization', 'idempotency-key'],
+    maxAge: 600,
+  });
   await app.register(rateLimit, {
     max: 300,
     timeWindow: '1 minute',

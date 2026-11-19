@@ -28,7 +28,7 @@ This document explains how the code is organized, why, and what has to happen
            ┌────────────── CDN (static assets, cached public pages) ──────────────┐
 Browser ──▶│ web (Next.js, N replicas)  — BFF: httpOnly cookies, server actions     │
            └──────────────────────────────┬───────────────────────────────────────┘
-                                          │ REST /api/v1 (JWT)
+Phone app (Expo, iOS/Android) ────────────┤ REST /api/v1 (JWT; refresh token in Keychain/Keystore)
                          ┌────────────────▼────────────────┐
                          │ api (NestJS/Fastify, N replicas) │──▶ Redis (cache, rate limit, OTP, queues)
                          └───────┬───────────────┬─────────┘
@@ -114,6 +114,31 @@ so instances receive only the traffic they serve. The web app proxies the stream
 same-origin (`/api/stream`, token stays in the httpOnly cookie) and refreshes the
 current screen on each event, falling back to polling if the stream is down.
 Couriers get a ping whenever a new delivery task appears.
+
+**Phone push.** The same `notify()` call also sends an Expo push (FCM/APNs) to
+every device the user registered (`PUT /api/v1/me/devices`). The gateway is a
+port (`PushGateway`): `PUSH_PROVIDER=none` in development, `expo` in production;
+tokens reported dead by the provider are deleted. Push failures never fail the
+business transaction — the in-app inbox remains the source of truth.
+
+## 5d. Mobile app (`apps/mobile`)
+
+Expo SDK + Expo Router (file-based routes mirror the web URLs: `/b/<slug>`,
+`/orders/<id>`, `/events/<id>`…, so assistant actions, favorites and push links
+open the same screen on every client). It shares **all** domain code with the web
+through `@dari/contracts` (zod schemas, state machines, Arabic labels and
+formatting in `@dari/contracts/i18n`) — no duplicated business rules.
+
+- **Auth:** phone OTP → access token in memory, refresh token in the device
+  keychain (`expo-secure-store`). One single-flight refresh on 401 and one retry;
+  a rejected refresh logs out, a network error does not (offline ≠ logout).
+- **Data:** TanStack Query (cache, pull-to-refresh, keyset `usePaged`), live
+  screens poll at 10–20 s while open and push wakes the user when closed.
+- **Orders:** cart persisted in AsyncStorage; checkout sends an
+  `Idempotency-Key`, so retries on flaky mobile networks never duplicate an order.
+- **RTL:** forced via `expo-localization` (`forcesRTL`) + `I18nManager`.
+- **Roles in one app:** citizen, merchant (live orders + smart alerts), courier
+  (board, atomic claim, earnings). Full merchant back-office stays on the web.
 
 ## 5c. City AI assistant
 

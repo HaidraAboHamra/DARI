@@ -252,7 +252,7 @@ export class InsightsService {
         .from(bookings)
         .where(and(eq(bookings.businessId, businessId), eq(bookings.status, 'pending'), gte(bookings.startsAt, sql`now()`))),
       this.db
-        .select({ acceptsOrders: businesses.acceptsOrders, products: sql<number>`(select count(*) from ${products} where business_id = ${businesses.id} and deleted_at is null)::int` })
+        .select({ acceptsOrders: businesses.acceptsOrders, products: sql<number>`(select count(*) from ${products} where ${products.businessId} = ${businessId} and ${products.deletedAt} is null)::int` })
         .from(businesses)
         .where(eq(businesses.id, businessId)),
     ]);
