@@ -25,6 +25,10 @@ const envSchema = z
       .regex(/^\d{6}$/)
       .optional()
       .or(z.literal('').transform(() => undefined)),
+    LOG_PRETTY: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((v) => v === 'true'),
     TRUST_PROXY: z
       .enum(['true', 'false'])
       .default('true')

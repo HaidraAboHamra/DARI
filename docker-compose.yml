@@ -1,0 +1,58 @@
+# Full local stack: `docker compose up --build`, then open http://localhost:3000
+# Demo logins (OTP code 123456): admin 0900000001, merchant 0900000002, courier 0900000003, citizen 0900000005
+name: dari
+
+x-api-env: &api-env
+  # Development mode enables the fixed demo OTP code. Never use these values in production.
+  NODE_ENV: development
+  OTP_DEV_CODE: '123456'
+  DATABASE_URL: postgres://dari:dari@postgres:5432/dari
+  REDIS_URL: redis://redis:6379
+  JWT_SECRET: local-compose-secret-change-me-0123456789abcdef
+  CORS_ORIGINS: http://localhost:3000
+  LOG_LEVEL: info
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment: { POSTGRES_USER: dari, POSTGRES_PASSWORD: dari, POSTGRES_DB: dari }
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ['CMD-SHELL', 'pg_isready -U dari'], interval: 5s, retries: 10 }
+    ports: ['5432:5432']
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    healthcheck: { test: ['CMD', 'redis-cli', 'ping'], interval: 5s, retries: 10 }
+    ports: ['6379:6379']
+
+  migrate:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    environment: *api-env
+    command: ['sh', '-c', 'node dist/infrastructure/database/migrate.js && node dist/infrastructure/database/seed/seed.js']
+    depends_on: { postgres: { condition: service_healthy } }
+
+  api:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    environment: *api-env
+    ports: ['4000:4000']
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  worker:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    environment: *api-env
+    command: ['node', 'dist/worker.js']
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  web:
+    build: { context: ., dockerfile: apps/web/Dockerfile }
+    environment: { API_URL: http://api:4000/api/v1, NEXT_PUBLIC_CITY: salamiyah }
+    ports: ['3000:3000']
+    depends_on: [api]
+
+volumes:
+  pgdata:

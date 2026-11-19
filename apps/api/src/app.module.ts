@@ -37,7 +37,7 @@ export const CORE_MODULES = [
       genReqId: (req) => (req.headers['x-request-id'] as string | undefined) ?? randomUUID(),
       redact: ['req.headers.authorization', 'req.headers.cookie'],
       autoLogging: { ignore: (req) => req.url?.startsWith('/health') ?? false },
-      ...(env.NODE_ENV === 'development' && { transport: { target: 'pino-pretty', options: { singleLine: true } } }),
+      ...(env.LOG_PRETTY && { transport: { target: 'pino-pretty', options: { singleLine: true } } }),
     },
   }),
   DatabaseModule,
