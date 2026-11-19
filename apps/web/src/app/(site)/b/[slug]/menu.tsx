@@ -29,6 +29,10 @@ export function Menu({ business, products }: { business: BusinessDetail; product
           <ul className="card divide-y divide-sand/70">
             {items.map((p) => (
               <li key={p.id} className="flex items-center gap-3 p-4">
+                {p.imageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.imageUrl} alt="" className="h-16 w-16 shrink-0 rounded-2xl object-cover" loading="lazy" />
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-navy">{p.name}</p>
                   {p.description && <p className="mt-0.5 line-clamp-2 text-sm text-muted">{p.description}</p>}

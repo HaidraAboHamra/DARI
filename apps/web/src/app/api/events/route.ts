@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   const anonymousId = jar.get(ANON_COOKIE)?.value ?? crypto.randomUUID();
   const token = jar.get(ACCESS_COOKIE)?.value;
 
-  await fetch(`${config.apiUrl}/events`, {
+  await fetch(`${config.apiUrl}/analytics/events`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...(token && { authorization: `Bearer ${token}` }) },
     body: JSON.stringify({ ...parsed.data, anonymousId }),

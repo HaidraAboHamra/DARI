@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/ui/primitives';
 
 export const metadata: Metadata = { title: 'استكشف سلمية' };
 
-const HREF: Partial<Record<string, string>> = { news: '/news', jobs: '/jobs' };
+const HREF: Partial<Record<string, string>> = { news: '/news', jobs: '/jobs', events: '/events?kind=event', trips: '/events?kind=trip', property: '/property' };
 
 export default function ExplorePage() {
   return (

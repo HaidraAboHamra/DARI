@@ -1,5 +1,6 @@
 import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
+import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import { VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -39,7 +40,9 @@ export async function createApp(env: Env, options: { logger?: boolean } = {}): P
     allowList: (req) => req.url.startsWith('/health'),
   });
 
-  app.setGlobalPrefix('api', { exclude: ['health/live', 'health/ready'] });
+  await app.register(multipart, { limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 5 } });
+
+  app.setGlobalPrefix('api', { exclude: ['health/live', 'health/ready', 'media/{*path}'] });
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
   app.enableShutdownHooks();
   return app;

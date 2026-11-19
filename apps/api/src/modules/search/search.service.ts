@@ -33,17 +33,18 @@ export class SearchService {
       cityId: city.id,
       timezone: city.timezone,
       terms: intent.terms.map(stemArabic),
-      vertical: vertical === 'jobs' || vertical === 'news' ? null : vertical,
+      vertical: vertical === 'jobs' || vertical === 'news' || vertical === 'property' ? null : vertical,
       categoryIds: query.vertical && query.vertical !== intent.vertical ? [] : intent.categoryIds,
       kinds: kindsFor(intent, vertical),
       openNow: intent.signals.openNow || intent.intent === 'urgent',
+      property: intent.property,
       limit: query.limit,
     };
 
     let hits = await this.engine.search(request);
     if (!hits.length && request.terms.length && (request.vertical || request.categoryIds.length)) {
       // The category guess may be wrong; retry across all verticals before reporting zero.
-      hits = await this.engine.search({ ...request, vertical: null, categoryIds: [], kinds: ['business', 'product', 'job', 'article'] });
+      hits = await this.engine.search({ ...request, vertical: null, categoryIds: [], kinds: ['business', 'product', 'event', 'listing', 'job', 'article'] });
     }
     hits = hits.slice(0, query.limit);
 
@@ -97,7 +98,9 @@ export class SearchService {
 
 function kindsFor(intent: IntentResult, vertical: string | null): SearchHit['kind'][] {
   if (intent.intent === 'apply' || vertical === 'jobs') return ['job'];
+  if (intent.intent === 'property' || vertical === 'property') return ['listing', 'business'];
+  if (intent.intent === 'attend' || intent.intent === 'travel' || vertical === 'events' || vertical === 'trips') return ['event', 'business'];
   if (intent.intent === 'information' || vertical === 'news') return intent.terms.length ? ['article', 'business'] : ['article'];
   if (vertical) return ['business', 'product'];
-  return ['business', 'product', 'job', 'article'];
+  return ['business', 'product', 'event', 'listing', 'job', 'article'];
 }

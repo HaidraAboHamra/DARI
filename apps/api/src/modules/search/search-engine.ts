@@ -1,4 +1,4 @@
-import type { SearchHit, Vertical } from '@dari/contracts';
+import type { ListingPurpose, PropertyType, SearchHit, Vertical } from '@dari/contracts';
 
 export interface SearchRequest {
   cityId: string;
@@ -9,6 +9,7 @@ export interface SearchRequest {
   /** Entity kinds worth querying for this intent, most relevant first. */
   kinds: SearchHit['kind'][];
   openNow: boolean;
+  property?: { purpose?: ListingPurpose; propertyType?: PropertyType };
   limit: number;
 }
 

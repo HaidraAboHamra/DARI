@@ -1,9 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { isOpenAt, type SearchHit } from '@dari/contracts';
-import { aliasedTable, and, desc, eq, inArray, isNull, like, or, type SQL, sql } from 'drizzle-orm';
+import { aliasedTable, and, asc, desc, eq, inArray, isNull, like, or, type SQL, sql } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { DB_READ, type Database } from '../../infrastructure/database/database.module';
-import { areas, articles, businesses, categories, jobs, products } from '../../infrastructure/database/schema';
+import { areas, articles, businesses, categories, cityEvents, jobs, products, propertyListings, users } from '../../infrastructure/database/schema';
+import { toListing } from '../property/property.service';
+import { toEvent } from '../events/events.service';
 import { toSummary } from '../directory/businesses.repository';
 
 import { toProduct } from '../catalog/catalog.service';
@@ -35,6 +37,10 @@ export class PostgresSearchEngine extends SearchEngine {
           return this.jobs(request);
         case 'article':
           return this.articles(request);
+        case 'event':
+          return this.events(request);
+        case 'listing':
+          return this.listings(request);
       }
     });
     // Kinds are ordered by relevance to the intent; earlier kinds get a ranking boost.
@@ -109,6 +115,40 @@ export class PostgresSearchEngine extends SearchEngine {
       .orderBy(...rankBy(text, desc(jobs.id)))
       .limit(req.limit);
     return rows.map((r) => ({ kind: 'job' as const, score: Number(r.score), item: toJob(r) }));
+  }
+
+  private async events(req: SearchRequest): Promise<SearchHit[]> {
+    const text = textMatch(cityEvents.searchText, req.terms);
+    const conditions: SQL[] = [eq(cityEvents.cityId, req.cityId), eq(cityEvents.status, 'published'), sql`${cityEvents.startsAt} > now()`];
+    if (text) conditions.push(text.where);
+    if (req.vertical === 'trips') conditions.push(eq(cityEvents.kind, 'trip'));
+    if (req.vertical === 'events') conditions.push(eq(cityEvents.kind, 'event'));
+    const rows = await this.db
+      .select({ event: cityEvents, organizerName: sql<string | null>`coalesce(${businesses.name}, ${users.name})`, score: text?.score ?? sql<number>`0.5` })
+      .from(cityEvents)
+      .leftJoin(businesses, eq(businesses.id, cityEvents.businessId))
+      .innerJoin(users, eq(users.id, cityEvents.organizerId))
+      .where(and(...conditions))
+      .orderBy(...rankBy(text, asc(cityEvents.startsAt)))
+      .limit(req.limit);
+    return rows.map((r) => ({ kind: 'event' as const, score: Number(r.score), item: toEvent(r) }));
+  }
+
+  private async listings(req: SearchRequest): Promise<SearchHit[]> {
+    const text = textMatch(propertyListings.searchText, req.terms);
+    const conditions: SQL[] = [eq(propertyListings.cityId, req.cityId), eq(propertyListings.status, 'active')];
+    if (text) conditions.push(text.where);
+    if (req.property?.purpose) conditions.push(eq(propertyListings.purpose, req.property.purpose));
+    if (req.property?.propertyType) conditions.push(eq(propertyListings.propertyType, req.property.propertyType));
+    const rows = await this.db
+      .select({ listing: propertyListings, areaName: area.nameAr, officeName: businesses.name, score: text?.score ?? sql<number>`0.5` })
+      .from(propertyListings)
+      .leftJoin(area, eq(area.id, propertyListings.areaId))
+      .leftJoin(businesses, eq(businesses.id, propertyListings.businessId))
+      .where(and(...conditions))
+      .orderBy(...rankBy(text, desc(propertyListings.id)))
+      .limit(req.limit);
+    return rows.map((r) => ({ kind: 'listing' as const, score: Number(r.score), item: toListing(r) }));
   }
 
   private async articles(req: SearchRequest): Promise<SearchHit[]> {

@@ -2,7 +2,7 @@ import { VERTICAL_META, VERTICALS } from '@dari/contracts';
 import Link from 'next/link';
 import { ServiceTile } from '@/components/brand/service-icon';
 
-const HREF: Partial<Record<string, string>> = { news: '/news', jobs: '/jobs' };
+const HREF: Partial<Record<string, string>> = { news: '/news', jobs: '/jobs', events: '/events?kind=event', trips: '/events?kind=trip', property: '/property' };
 
 export function ServiceGrid() {
   return (

@@ -29,10 +29,24 @@ const envSchema = z
       .enum(['true', 'false'])
       .default('false')
       .transform((v) => v === 'true'),
+    /** Public base URL of this API (used to build media URLs for the local storage driver). */
+    PUBLIC_API_URL: z.url().default('http://localhost:4000'),
+    STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
+    UPLOAD_DIR: z.string().default('./uploads'),
+    S3_BUCKET: z.string().optional(),
+    S3_REGION: z.string().default('auto'),
+    /** For S3-compatible stores (Cloudflare R2, MinIO). */
+    S3_ENDPOINT: z.url().optional(),
+    /** Public CDN base for uploaded objects, e.g. https://cdn.dari.sy */
+    S3_PUBLIC_URL: z.url().optional(),
     TRUST_PROXY: z
       .enum(['true', 'false'])
       .default('true')
       .transform((v) => v === 'true'),
+  })
+  .refine((env) => env.STORAGE_DRIVER !== 's3' || (env.S3_BUCKET && env.S3_PUBLIC_URL), {
+    message: 'S3_BUCKET and S3_PUBLIC_URL are required when STORAGE_DRIVER=s3',
+    path: ['S3_BUCKET'],
   })
   .refine((env) => env.NODE_ENV !== 'production' || env.OTP_DEV_CODE === undefined, {
     message: 'OTP_DEV_CODE must not be set in production',

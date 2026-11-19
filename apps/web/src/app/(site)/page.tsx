@@ -1,6 +1,7 @@
-import type { Article, BusinessSummary, Job, Page } from '@dari/contracts';
+import type { Article, BusinessSummary, CityEvent, Job, Page } from '@dari/contracts';
 import Link from 'next/link';
 import { ArticleCard, JobCard } from '@/components/content/cards';
+import { EventCard } from '@/components/content/event-card';
 import { BusinessCard } from '@/components/directory/business-card';
 import { SearchBar } from '@/components/directory/search-bar';
 import { ServiceGrid } from '@/components/directory/service-grid';
@@ -17,10 +18,11 @@ const more = (href: string) => (
 
 export default async function HomePage() {
   const query = { city: config.city, limit: 4 };
-  const [businesses, news, jobs] = await Promise.all([
+  const [businesses, news, jobs, events] = await Promise.all([
     api<Page<BusinessSummary>>('/businesses', { query: { ...query, limit: 6 }, revalidate: 60 }),
     api<Page<Article>>('/news', { query, revalidate: 60 }),
     api<Page<Job>>('/jobs', { query, revalidate: 60 }),
+    api<Page<CityEvent>>('/events', { query, revalidate: 60 }),
   ]);
 
   return (
@@ -49,6 +51,17 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      {events.items.length > 0 && (
+        <section>
+          <SectionHeader title="فعاليات ورحلات قادمة" action={more('/events')} />
+          <div className="grid gap-3 md:grid-cols-2">
+            {events.items.map((e) => (
+              <EventCard key={e.id} event={e} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section>
         <SectionHeader title="الأعلى تقييماً" action={more('/explore')} />

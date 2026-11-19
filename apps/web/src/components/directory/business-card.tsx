@@ -8,7 +8,12 @@ export function BusinessCard({ business }: { business: BusinessSummary }) {
   return (
     <Link href={`/b/${business.slug}`} className="card group flex overflow-hidden transition-shadow hover:shadow-lg">
       <div className="grid w-24 shrink-0 place-items-center sm:w-28" style={{ background: `linear-gradient(160deg, ${meta.color}26, ${meta.color}0d)` }}>
-        <ServiceGlyph vertical={business.vertical} className="h-11 w-11 transition-transform group-hover:scale-105" />
+        {business.logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={business.logoUrl} alt="" className="h-16 w-16 rounded-2xl object-cover" loading="lazy" />
+        ) : (
+          <ServiceGlyph vertical={business.vertical} className="h-11 w-11 transition-transform group-hover:scale-105" />
+        )}
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-4">
         <div className="flex items-start justify-between gap-2">

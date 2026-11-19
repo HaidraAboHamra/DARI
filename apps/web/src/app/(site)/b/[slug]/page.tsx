@@ -48,10 +48,18 @@ export default async function BusinessPage({ params }: { params: Promise<Params>
   return (
     <div className="flex flex-col gap-8">
       <TrackView name="entity.viewed" entityType="business" entityId={business.id} />
-      <section className="night -mx-4 -mt-6 px-4 pt-8 pb-8 text-ivory sm:mx-0 sm:mt-0 sm:rounded-[2rem] sm:px-10">
+      <section
+        className="night -mx-4 -mt-6 bg-cover bg-center px-4 pt-8 pb-8 text-ivory sm:mx-0 sm:mt-0 sm:rounded-[2rem] sm:px-10"
+        style={business.coverUrl ? { backgroundImage: `linear-gradient(to top, rgb(11 20 36 / .95), rgb(11 20 36 / .55)), url(${JSON.stringify(business.coverUrl).slice(1, -1)})` } : undefined}
+      >
         <div className="flex items-start gap-4">
-          <span className="grid h-20 w-20 shrink-0 place-items-center rounded-3xl bg-white/10">
-            <ServiceGlyph vertical={business.vertical} className="h-12 w-12" color="#EBD596" />
+          <span className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-3xl bg-white/10">
+            {business.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={business.logoUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <ServiceGlyph vertical={business.vertical} className="h-12 w-12" color="#EBD596" />
+            )}
           </span>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">

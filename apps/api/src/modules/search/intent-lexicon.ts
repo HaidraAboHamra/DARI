@@ -1,4 +1,4 @@
-import type { Intent, Vertical } from '@dari/contracts';
+import type { Intent, ListingPurpose, PropertyType, Vertical } from '@dari/contracts';
 
 /**
  * Built-in dialect lexicon (Levantine + MSA), already in normalized form
@@ -40,3 +40,19 @@ export const INTENT_WORDS: ReadonlyMap<string, IntentWord> = new Map<string, Int
 function words(list: string[], value: IntentWord): [string, IntentWord][] {
   return list.map((w) => [w, value]);
 }
+
+/** Words that refine a real-estate need into structured filters. */
+export const PROPERTY_HINTS: ReadonlyMap<string, { purpose?: ListingPurpose; propertyType?: PropertyType }> = new Map([
+  ['ايجار', { purpose: 'rent' }],
+  ['للايجار', { purpose: 'rent' }],
+  ['اجار', { purpose: 'rent' }],
+  ['للبيع', { purpose: 'sale' }],
+  ['بيع', { purpose: 'sale' }],
+  ['شقه', { propertyType: 'apartment' }],
+  ['بيت', { propertyType: 'house' }],
+  ['منزل', { propertyType: 'house' }],
+  ['ارض', { propertyType: 'land' }],
+  ['محل', { propertyType: 'shop' }],
+  ['مكتب', { propertyType: 'office' }],
+  ['مزرعه', { propertyType: 'farm' }],
+]);

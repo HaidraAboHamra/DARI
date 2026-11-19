@@ -60,3 +60,10 @@ describe('IntentClassifier', () => {
     expect(r.categoryIds.sort()).toEqual(['pizza', 'restaurants']);
   });
 });
+
+describe('IntentClassifier property hints', () => {
+  it('extracts purpose and property type', () => {
+    expect(classifier.classify('بدي شقة للإيجار').property).toEqual({ purpose: 'rent', propertyType: 'apartment' });
+    expect(classifier.classify('أرض للبيع').property).toEqual({ purpose: 'sale', propertyType: 'land' });
+  });
+});

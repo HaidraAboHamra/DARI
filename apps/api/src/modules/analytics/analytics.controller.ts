@@ -15,7 +15,7 @@ const MAX_EVENT_AGE_MS = 7 * 86_400_000;
  * to the queue; the worker writes them in bulk into the partitioned table.
  */
 @Public()
-@Controller({ path: 'events', version: '1' })
+@Controller({ path: 'analytics/events', version: '1' })
 export class AnalyticsController {
   constructor(
     private readonly queue: JobQueue,

@@ -1,5 +1,6 @@
 import { type Intent, normalizeArabic, tokenizeArabic, type Vertical, VERTICAL_META } from '@dari/contracts';
-import { CHEAP, INTENT_WORDS, NEAR, OPEN_NOW, QUALITY, STOPWORDS, URGENCY } from './intent-lexicon';
+import type { ListingPurpose, PropertyType } from '@dari/contracts';
+import { CHEAP, INTENT_WORDS, NEAR, OPEN_NOW, PROPERTY_HINTS, QUALITY, STOPWORDS, URGENCY } from './intent-lexicon';
 
 export interface CategoryKeywords {
   id: string;
@@ -17,6 +18,7 @@ export interface IntentResult {
   terms: string[];
   normalizedQuery: string;
   signals: { urgency: boolean; openNow: boolean; cheap: boolean; near: boolean; quality: boolean };
+  property: { purpose?: ListingPurpose; propertyType?: PropertyType };
 }
 
 const MIN_PREFIX = 4;
@@ -49,9 +51,11 @@ export class IntentClassifier {
     const matchedCategories = new Map<string, CategoryKeywords>();
     const intentVotes: { intent: Intent; vertical: Vertical | null }[] = [];
     const terms: string[] = [];
+    const property: IntentResult['property'] = {};
 
     for (const raw of tokens) {
       const token = this.canonical(raw);
+      Object.assign(property, PROPERTY_HINTS.get(token));
       if (URGENCY.has(token)) signals.urgency = true;
       else if (OPEN_NOW.has(token)) signals.openNow = true;
       else if (CHEAP.has(token)) signals.cheap = true;
@@ -85,6 +89,7 @@ export class IntentClassifier {
       terms,
       normalizedQuery,
       signals,
+      property,
     };
   }
 

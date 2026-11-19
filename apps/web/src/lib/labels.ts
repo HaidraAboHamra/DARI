@@ -102,3 +102,19 @@ export const SERVICE_NEXT_LABEL: Record<string, string> = {
 };
 
 export const URGENCY_LABEL: Record<string, string> = { now: 'الآن', today: 'اليوم', scheduled: 'بموعد' };
+
+export const PROPERTY_TYPE_LABEL: Record<string, string> = {
+  apartment: 'شقة',
+  house: 'منزل',
+  land: 'أرض',
+  shop: 'محل',
+  office: 'مكتب',
+  farm: 'مزرعة',
+};
+export const PURPOSE_LABEL: Record<string, string> = { sale: 'للبيع', rent: 'للإيجار' };
+export const LEAD_STATUS_LABEL: Record<string, string> = { new: 'جديد', contacted: 'تم التواصل', closed: 'مغلق' };
+
+const eventDate = new Intl.DateTimeFormat('ar-SY', { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Damascus' });
+export function eventWhen(iso: string): string {
+  return eventDate.format(new Date(iso));
+}

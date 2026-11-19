@@ -3,6 +3,7 @@
 import type { BusinessDetail } from '@dari/contracts';
 import { useActionState } from 'react';
 import { updateBusinessSettings } from '@/actions/merchant';
+import { ImageUploader } from '@/components/media/image-uploader';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { Field, FormError, Input, Textarea } from '@/components/ui/primitives';
 
@@ -16,6 +17,8 @@ export function SettingsForm({ business }: { business: BusinessDetail }) {
       </Field>
       <div className="sm:col-span-2"><Field label="العنوان"><Input name="address" defaultValue={business.address ?? ''} /></Field></div>
       <div className="sm:col-span-2"><Field label="الوصف"><Textarea name="description" defaultValue={business.description ?? ''} /></Field></div>
+      <ImageUploader name="logoUrl" max={1} initial={business.logoUrl ? [business.logoUrl] : []} />
+      <ImageUploader name="coverUrl" max={1} initial={business.coverUrl ? [business.coverUrl] : []} />
       <label className="flex items-center gap-3 sm:col-span-2">
         <input type="checkbox" name="acceptsOrders" defaultChecked={business.acceptsOrders} className="h-5 w-5 accent-[#C9A24B]" />
         <span className="font-medium">استقبال الطلبات عبر داري</span>

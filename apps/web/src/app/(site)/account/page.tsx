@@ -15,6 +15,8 @@ const LINKS = [
   { href: '/orders', label: 'طلباتي' },
   { href: '/bookings', label: 'حجوزاتي' },
   { href: '/services', label: 'طلبات الخدمات' },
+  { href: '/tickets', label: 'تذاكري' },
+  { href: '/account/listings', label: 'إعلاناتي العقارية' },
   { href: '/delivery', label: 'طلبات التوصيل' },
   { href: '/account/notifications', label: 'الإشعارات' },
   { href: '/merchant', label: 'لوحة التاجر — Merchant OS' },

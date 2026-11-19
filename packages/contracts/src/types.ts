@@ -14,6 +14,7 @@ import type {
 } from './enums';
 import type { GeoPoint, Place } from './schemas/common';
 import type { OpeningHours } from './schemas/business';
+import type { CityEvent, PropertyListing } from './types-v2';
 
 /** Keyset-paginated list. `nextCursor` is null on the last page. */
 export interface Page<T> {
@@ -203,7 +204,9 @@ export type SearchHit =
   | { kind: 'business'; score: number; item: BusinessSummary }
   | { kind: 'product'; score: number; item: Product & { businessSlug: string; businessName: string } }
   | { kind: 'job'; score: number; item: Job }
-  | { kind: 'article'; score: number; item: Article };
+  | { kind: 'article'; score: number; item: Article }
+  | { kind: 'event'; score: number; item: CityEvent }
+  | { kind: 'listing'; score: number; item: PropertyListing };
 
 export interface SearchResponse {
   searchId: string;
