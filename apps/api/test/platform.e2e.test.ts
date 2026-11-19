@@ -130,3 +130,17 @@ describe('platform (e2e)', () => {
     expect(page.json().items.find((b: { id: string }) => b.id === target.id)).toMatchObject({ ratingAvg: 3.5, ratingCount: 2 });
   });
 });
+
+describe('routing limits', () => {
+  it('serves long percent-encoded Arabic slugs', async () => {
+    const h = await createHarness();
+    try {
+      const list = await h.app.inject({ method: 'GET', url: '/api/v1/businesses?city=salamiyah&vertical=food&limit=50' });
+      const slug: string = list.json().items.find((b: { name: string }) => b.name === 'مطعم بيتزا إيطاليا').slug;
+      const res = await h.app.inject({ method: 'GET', url: `/api/v1/businesses/by-slug/${encodeURIComponent(slug)}` });
+      expect(res.statusCode).toBe(200);
+    } finally {
+      await h.close();
+    }
+  });
+});

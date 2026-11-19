@@ -1,11 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { SearchHit } from '@dari/contracts';
+import { isOpenAt, type SearchHit } from '@dari/contracts';
 import { aliasedTable, and, desc, eq, inArray, isNull, like, or, type SQL, sql } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { DB_READ, type Database } from '../../infrastructure/database/database.module';
 import { areas, articles, businesses, categories, jobs, products } from '../../infrastructure/database/schema';
 import { toSummary } from '../directory/businesses.repository';
-import { isOpenAt } from '../directory/opening-hours';
+
 import { toProduct } from '../catalog/catalog.service';
 import { openJobConditions, toJob } from '../jobs/jobs.service';
 import { toArticle } from '../news/news.service';

@@ -46,11 +46,8 @@ describe('commerce (e2e)', () => {
     const seen = new Set<string>();
     let cursor: string | null = null;
     do {
-      const res = await h.app.inject({
-        method: 'GET',
-        url: `/api/v1/businesses?city=salamiyah&limit=3${cursor ? `&cursor=${cursor}` : ''}`,
-      });
-      const page = res.json<Page<BusinessSummary>>();
+      const url: string = `/api/v1/businesses?city=salamiyah&limit=3${cursor ? `&cursor=${cursor}` : ''}`;
+      const page: Page<BusinessSummary> = (await h.app.inject({ method: 'GET', url })).json();
       page.items.forEach((b) => {
         expect(seen.has(b.id)).toBe(false);
         seen.add(b.id);

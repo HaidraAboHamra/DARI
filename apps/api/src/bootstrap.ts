@@ -15,6 +15,8 @@ export async function createApp(env: Env, options: { logger?: boolean } = {}): P
   const adapter = new FastifyAdapter({
     trustProxy: env.TRUST_PROXY,
     bodyLimit: 1_048_576,
+    // Arabic slugs are ~6 bytes per letter once percent-encoded.
+    maxParamLength: 512,
     genReqId: (req: { headers: Record<string, string | string[] | undefined> }) => {
       const header = req.headers['x-request-id'];
       return typeof header === 'string' && header.length <= 100 ? header : randomUUID();

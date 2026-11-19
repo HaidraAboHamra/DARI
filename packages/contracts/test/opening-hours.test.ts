@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isOpenAt, localClock } from './opening-hours';
+import { isOpenAt, localClock } from '../src/domain/opening-hours';
 
 const TZ = 'Asia/Damascus'; // UTC+3
 // 2026-11-19 is a Thursday (day 4).
