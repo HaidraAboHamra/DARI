@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dari
+  namespace: dari
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/proxy-body-size: 6m
+    # Server-Sent Events: no buffering, long-lived connections.
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+spec:
+  ingressClassName: nginx
+  tls: [{ hosts: [dari.sy, api.dari.sy], secretName: dari-tls }]
+  rules:
+    - host: dari.sy
+      http: { paths: [{ path: /, pathType: Prefix, backend: { service: { name: dari-web, port: { number: 80 } } } }] }
+    - host: api.dari.sy
+      http:
+        paths:
+          - { path: /api, pathType: Prefix, backend: { service: { name: dari-api, port: { number: 80 } } } }
+          - { path: /health, pathType: Prefix, backend: { service: { name: dari-api, port: { number: 80 } } } }
+          - { path: /media, pathType: Prefix, backend: { service: { name: dari-api, port: { number: 80 } } } }

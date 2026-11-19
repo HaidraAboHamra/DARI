@@ -1,0 +1,22 @@
+# Non-secret configuration. Secrets (DATABASE_URL, JWT_SECRET, SMS/WhatsApp tokens,
+# ANTHROPIC_API_KEY, METRICS_TOKEN, S3 credentials) live in the `dari-secrets` Secret,
+# created by your secret manager (External Secrets / Sealed Secrets) — never committed.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dari-config
+  namespace: dari
+data:
+  NODE_ENV: production
+  LOG_LEVEL: info
+  DB_POOL_MAX: "15"
+  CORS_ORIGINS: https://dari.sy
+  PUBLIC_API_URL: https://api.dari.sy
+  STORAGE_DRIVER: s3
+  S3_REGION: auto
+  S3_PUBLIC_URL: https://cdn.dari.sy
+  SMS_PROVIDER: whatsapp
+  ASSISTANT_MODEL: claude-opus-5-5
+  ASSISTANT_HOURLY_LIMIT: "30"
+  API_URL: http://dari-api.dari.svc.cluster.local/api/v1
+  NEXT_PUBLIC_CITY: salamiyah

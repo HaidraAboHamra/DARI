@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dari-api
+  namespace: dari
+spec:
+  replicas: 3
+  revisionHistoryLimit: 5
+  strategy: { type: RollingUpdate, rollingUpdate: { maxUnavailable: 0, maxSurge: 25% } }
+  selector: { matchLabels: { app: dari-api } }
+  template:
+    metadata:
+      labels: { app: dari-api }
+      annotations: { prometheus.io/scrape: "true", prometheus.io/port: "4000", prometheus.io/path: /metrics }
+    spec:
+      terminationGracePeriodSeconds: 40
+      topologySpreadConstraints:
+        - { maxSkew: 1, topologyKey: topology.kubernetes.io/zone, whenUnsatisfiable: ScheduleAnyway, labelSelector: { matchLabels: { app: dari-api } } }
+      containers:
+        - name: api
+          image: ghcr.io/dari/api:latest
+          ports: [{ containerPort: 4000 }]
+          envFrom: [{ configMapRef: { name: dari-config } }, { secretRef: { name: dari-secrets } }]
+          resources:
+            requests: { cpu: 250m, memory: 256Mi }
+            limits: { memory: 512Mi }
+          readinessProbe: { httpGet: { path: /health/ready, port: 4000 }, periodSeconds: 5, failureThreshold: 3 }
+          livenessProbe: { httpGet: { path: /health/live, port: 4000 }, periodSeconds: 10, failureThreshold: 6 }
+          lifecycle:
+            # Let the load balancer drain before SIGTERM closes connections.
+            preStop: { exec: { command: ["sleep", "10"] } }
+          securityContext: { runAsNonRoot: true, allowPrivilegeEscalation: false, readOnlyRootFilesystem: true }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: dari-api, namespace: dari }
+spec:
+  selector: { app: dari-api }
+  ports: [{ port: 80, targetPort: 4000 }]
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: dari-api, namespace: dari }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: dari-api }
+  minReplicas: 3
+  maxReplicas: 60
+  metrics:
+    - { type: Resource, resource: { name: cpu, target: { type: Utilization, averageUtilization: 65 } } }
+  behavior:
+    scaleUp: { stabilizationWindowSeconds: 0, policies: [{ type: Percent, value: 100, periodSeconds: 30 }] }
+    scaleDown: { stabilizationWindowSeconds: 300 }
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: { name: dari-api, namespace: dari }
+spec:
+  minAvailable: 2
+  selector: { matchLabels: { app: dari-api } }
