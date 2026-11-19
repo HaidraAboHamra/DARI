@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build shared contracts
+        run: pnpm --filter @dari/contracts build
+
       - name: Generate Android project
         working-directory: apps/mobile
         run: npx expo prebuild --platform android --non-interactive
