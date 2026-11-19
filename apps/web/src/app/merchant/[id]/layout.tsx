@@ -17,6 +17,7 @@ export default async function BusinessConsoleLayout({ children, params }: { chil
     { href: `/merchant/${id}`, label: 'الطلبات واللوحة' },
     { href: `/merchant/${id}/products`, label: 'الكتالوج' },
     { href: `/merchant/${id}/bookings`, label: 'الحجوزات' },
+    ...(business.vertical === 'services' || business.vertical === 'health' ? [{ href: `/merchant/${id}/requests`, label: 'طلبات الخدمة' }] : []),
     { href: `/merchant/${id}/customers`, label: 'الزبائن CRM' },
     { href: `/merchant/${id}/team`, label: 'الفريق' },
   ];

@@ -125,6 +125,7 @@ function toDetail(row: SummaryRow): BusinessDetail {
   return {
     ...toSummary(row),
     cityId: b.cityId,
+    categoryId: b.categoryId,
     description: b.description,
     phone: b.phone,
     whatsapp: b.whatsapp,

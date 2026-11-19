@@ -20,6 +20,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { OrdersModule } from './modules/orders/orders.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { SearchModule } from './modules/search/search.module';
+import { ServiceRequestsModule } from './modules/services/services.module';
 import { CitiesModule } from './modules/cities/cities.module';
 import { DirectoryModule } from './modules/directory/directory.module';
 import { HealthModule } from './modules/health/health.module';
@@ -70,6 +71,7 @@ export const CORE_MODULES = [
     InsightsModule,
     NotificationsModule,
     BookingsModule,
+    ServiceRequestsModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: HttpErrorFilter }],
 })

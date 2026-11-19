@@ -83,6 +83,7 @@ export interface BusinessSummary {
 
 export interface BusinessDetail extends BusinessSummary {
   cityId: string;
+  categoryId: string | null;
   description: string | null;
   phone: string | null;
   whatsapp: string | null;

@@ -5,6 +5,7 @@ import { cache } from 'react';
 import { TrackView } from '@/components/analytics/track-view';
 import { BookingWidget } from '@/components/bookings/booking-widget';
 import { ServiceGlyph } from '@/components/brand/service-icon';
+import { ButtonLink } from '@/components/ui/button';
 import { ClockIcon, PinIcon } from '@/components/ui/icons';
 import { Badge, SectionHeader, Stars } from '@/components/ui/primitives';
 import { api, apiOrNull } from '@/lib/api';
@@ -78,6 +79,16 @@ export default async function BusinessPage({ params }: { params: Promise<Params>
           <ContactButtons businessId={business.id} phone={business.phone} whatsapp={business.whatsapp} location={business.location} />
         </div>
       </section>
+
+      {business.vertical === 'services' && business.categoryId && (
+        <section className="card flex flex-wrap items-center justify-between gap-4 p-5">
+          <div>
+            <p className="font-display text-lg font-bold text-navy">بحاجة لخدمة من {business.name}؟</p>
+            <p className="text-sm text-muted">صف المشكلة واستلم عرض سعر وموعد وصول.</p>
+          </div>
+          <ButtonLink href={`/services/new?${new URLSearchParams({ category: business.categoryId, target: business.id, name: business.name })}`}>اطلب الخدمة</ButtonLink>
+        </section>
+      )}
 
       {resources.length > 0 && (
         <section>

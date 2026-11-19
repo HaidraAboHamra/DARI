@@ -85,3 +85,20 @@ const day = new Intl.DateTimeFormat('ar-SY', { dateStyle: 'medium', timeZone: 'A
 export function bookingWhen(b: { unit: 'slot' | 'night'; startsAt: string; endsAt: string }): string {
   return b.unit === 'slot' ? when.format(new Date(b.startsAt)) : `${day.format(new Date(b.startsAt))} ← ${day.format(new Date(b.endsAt))}`;
 }
+
+export const SERVICE_STATUS_LABEL: Record<string, string> = {
+  open: 'بانتظار العروض',
+  assigned: 'تم اختيار مقدم الخدمة',
+  on_the_way: 'في الطريق',
+  arrived: 'وصل',
+  completed: 'مكتمل',
+  cancelled: 'ملغي',
+};
+
+export const SERVICE_NEXT_LABEL: Record<string, string> = {
+  on_the_way: 'انطلقت إلى الزبون',
+  arrived: 'وصلت',
+  completed: 'تم إنجاز العمل',
+};
+
+export const URGENCY_LABEL: Record<string, string> = { now: 'الآن', today: 'اليوم', scheduled: 'بموعد' };

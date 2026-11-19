@@ -44,6 +44,13 @@ export default async function VerticalPage({ params, searchParams }: { params: P
         </div>
       </header>
 
+      {vertical === 'services' && (
+        <div className="night flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] p-5 text-ivory">
+          <p className="font-display text-lg font-bold">صف المشكلة واستلم عروض أسعار خلال دقائق</p>
+          <ButtonLink href="/services/new">اطلب خدمة</ButtonLink>
+        </div>
+      )}
+
       {categories.length > 0 && (
         <nav className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4" aria-label="التصنيفات">
           <Link href={`/explore/${vertical}`} className={chip(!category)}>
