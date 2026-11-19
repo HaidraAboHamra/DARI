@@ -15,6 +15,7 @@ const LINKS = [
   { href: '/orders', label: 'طلباتي' },
   { href: '/bookings', label: 'حجوزاتي' },
   { href: '/services', label: 'طلبات الخدمات' },
+  { href: '/account/favorites', label: 'المفضلة والمتابعات' },
   { href: '/tickets', label: 'تذاكري' },
   { href: '/account/listings', label: 'إعلاناتي العقارية' },
   { href: '/delivery', label: 'طلبات التوصيل' },
@@ -28,6 +29,7 @@ export default async function AccountPage() {
   const staffLinks = [
     session.role === 'courier' || session.role === 'admin' ? { href: '/courier', label: 'لوحة المندوب' } : null,
     session.role === 'admin' ? { href: '/admin', label: 'ذكاء المدينة والإدارة' } : null,
+    session.role === 'editor' || session.role === 'admin' ? { href: '/editor', label: 'تحرير الأخبار' } : null,
   ].filter((l): l is { href: string; label: string } => l !== null);
 
   return (

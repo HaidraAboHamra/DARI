@@ -1,4 +1,4 @@
-import { type BusinessDetail, type CityKpis, type DemandInsight, VERTICAL_META, type Vertical } from '@dari/contracts';
+import { type BusinessDetail, type BusinessSummary, type CityKpis, type DemandInsight, type Page, VERTICAL_META, type Vertical } from '@dari/contracts';
 import type { Metadata } from 'next';
 import { setBusinessStatus } from '@/actions/merchant';
 import { SubmitButton } from '@/components/ui/submit-button';
@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { config } from '@/lib/config';
 import { money, number, percent, timeAgo } from '@/lib/format';
 import { requireUser } from '@/lib/guards';
+import { FeatureForm, PaymentForm, RoleForm } from './admin-forms';
 
 export const metadata: Metadata = { title: 'ذكاء المدينة' };
 
@@ -21,13 +22,16 @@ interface Opportunity {
 export default async function AdminPage() {
   await requireUser('/admin', ['admin']);
   const q = { city: config.city, days: 7 };
-  const [kpis, zero, top, opportunities, queue] = await Promise.all([
+  const [kpis, zero, top, opportunities, queue, revenue, directory] = await Promise.all([
     api<CityKpis>('/admin/insights/kpis', { query: q }),
     api<DemandInsight[]>('/admin/insights/demand', { query: { ...q, zeroOnly: true } }),
     api<DemandInsight[]>('/admin/insights/demand', { query: q }),
     api<Opportunity[]>('/admin/insights/opportunities', { query: { ...q, days: 30 } }),
     api<BusinessDetail[]>('/admin/businesses', { query: { status: 'pending_review' } }),
+    api<{ subscriptionRevenue30d: number; payingBusinesses: number }>('/admin/revenue'),
+    api<Page<BusinessSummary>>('/businesses', { query: { city: config.city, limit: 50 } }),
   ]);
+  const options = directory.items.map((b) => ({ id: b.id, name: b.name }));
 
   return (
     <div className="flex flex-col gap-8">
@@ -40,6 +44,8 @@ export default async function AdminPage() {
         <Stat label="طلبات" value={number(kpis.orders7d)} />
         <Stat label="قيمة المعاملات GMV" value={money(kpis.gmv7d)} />
         <Stat label="أنشطة فعّالة" value={number(kpis.activeBusinesses)} />
+        <Stat label="إيراد الاشتراكات (30 يوم)" value={money(revenue.subscriptionRevenue30d)} />
+        <Stat label="أنشطة مشتركة" value={number(revenue.payingBusinesses)} />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
@@ -116,6 +122,13 @@ export default async function AdminPage() {
             ))}
           </ul>
         )}
+      </section>
+      <section className="grid gap-6 lg:grid-cols-2">
+        <div className="card p-5"><SectionHeader title="تسجيل دفعة اشتراك" /><PaymentForm businesses={options} /></div>
+        <div className="flex flex-col gap-6">
+          <div className="card p-5"><SectionHeader title="ظهور مميز (إعلان)" /><FeatureForm businesses={options} /></div>
+          <div className="card p-5"><SectionHeader title="أدوار الفريق (مندوب، محرر، مدير)" /><RoleForm /></div>
+        </div>
       </section>
     </div>
   );

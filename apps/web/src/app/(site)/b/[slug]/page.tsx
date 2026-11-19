@@ -1,9 +1,11 @@
-import { type BookableResource, type BusinessDetail, isOpenAt, type Page, type Product, type Review, VERTICAL_META } from '@dari/contracts';
+import { type BookableResource, type BusinessDetail, type Connection, type Coupon, isOpenAt, type Page, type Product, type Review, VERTICAL_META } from '@dari/contracts';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { TrackView } from '@/components/analytics/track-view';
 import { BookingWidget } from '@/components/bookings/booking-widget';
+import { ConnectButton } from '@/components/marketing/connect-button';
+import { FavoriteButton } from '@/components/marketing/favorite-button';
 import { ServiceGlyph } from '@/components/brand/service-icon';
 import { ButtonLink } from '@/components/ui/button';
 import { ClockIcon, PinIcon } from '@/components/ui/icons';
@@ -36,12 +38,16 @@ export default async function BusinessPage({ params }: { params: Promise<Params>
   const business = await getBusiness(slug);
   if (!business) notFound();
 
-  const [products, resources, reviews, user] = await Promise.all([
+  const user = await currentUser();
+  const [products, resources, reviews, offers, favorite, connections] = await Promise.all([
     api<Product[]>(`/businesses/${business.id}/products`, { revalidate: 60 }).catch(() => []),
     api<BookableResource[]>(`/businesses/${business.id}/resources`, { revalidate: 30 }).catch(() => []),
     api<Page<Review>>(`/businesses/${business.id}/reviews`, { query: { limit: 10 }, revalidate: 60 }),
-    currentUser(),
+    api<Coupon[]>(`/businesses/${business.id}/offers`, { revalidate: 60 }).catch(() => []),
+    user ? api<{ favorite: boolean }>('/me/favorites/check', { query: { entityType: 'business', entityId: business.id } }).then((r) => r.favorite) : false,
+    user ? api<Connection[]>('/me/connections') : Promise.resolve([] as Connection[]),
   ]);
+  const connected = connections.some((c) => c.business.id === business.id);
   const meta = VERTICAL_META[business.vertical];
   const open = isOpenAt(business.openingHours, new Date(), 'Asia/Damascus');
 
@@ -83,10 +89,30 @@ export default async function BusinessPage({ params }: { params: Promise<Params>
             <PinIcon className="h-4 w-4" /> {business.address}
           </p>
         )}
-        <div className="mt-5 [&_a:not(:first-child)]:!border-champagne/40 [&_a:not(:first-child)]:!text-champagne">
+        <div className="mt-5 flex flex-wrap items-center gap-2 [&_a:not(:first-child)]:!border-champagne/40 [&_a:not(:first-child)]:!text-champagne">
           <ContactButtons businessId={business.id} phone={business.phone} whatsapp={business.whatsapp} location={business.location} />
+          <FavoriteButton entityType="business" entityId={business.id} initial={favorite} />
         </div>
       </section>
+
+      {offers.length > 0 && (
+        <section className="flex flex-col gap-2">
+          {offers.map((o) => (
+            <div key={o.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border-2 border-dashed border-gold bg-champagne/20 p-4">
+              <div>
+                <p className="font-bold text-navy">🎁 {o.title}</p>
+                <p className="text-sm text-muted">
+                  {o.kind === 'percent' ? `خصم ${o.value}٪` : `خصم ${o.value.toLocaleString('ar-SY')} ل.س`}
+                  {o.minOrder > 0 && ` · للطلبات فوق ${o.minOrder.toLocaleString('ar-SY')}`}
+                </p>
+              </div>
+              <span className="rounded-full bg-navy px-4 py-1.5 font-mono font-bold text-champagne" dir="ltr">{o.code}</span>
+            </div>
+          ))}
+        </section>
+      )}
+
+      <ConnectButton businessId={business.id} connected={connected} businessName={business.name} />
 
       {business.vertical === 'services' && business.categoryId && (
         <section className="card flex flex-wrap items-center justify-between gap-4 p-5">

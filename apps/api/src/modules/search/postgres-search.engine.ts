@@ -72,7 +72,7 @@ export class PostgresSearchEngine extends SearchEngine {
       .slice(0, req.limit)
       .map((r) => ({
         kind: 'business' as const,
-        score: Number(r.score) + r.business.ratingAvg * 0.03 + (r.business.verifiedAt ? 0.02 : 0),
+        score: Number(r.score) + r.business.ratingAvg * 0.03 + (r.business.verifiedAt ? 0.02 : 0) + (r.business.featuredUntil && r.business.featuredUntil > now ? 0.15 : 0),
         item: toSummary(r),
       }));
   }

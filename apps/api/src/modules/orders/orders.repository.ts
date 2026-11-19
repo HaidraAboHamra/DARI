@@ -8,6 +8,7 @@ import { businesses, orderItems, orders, users } from '../../infrastructure/data
 type OrderRow = {
   order: typeof orders.$inferSelect;
   businessName: string;
+  businessSlug: string;
   customerName: string | null;
 };
 
@@ -52,7 +53,7 @@ export class OrdersRepository {
 
   private base(db: DbExecutor) {
     return db
-      .select({ order: orders, businessName: businesses.name, customerName: users.name })
+      .select({ order: orders, businessName: businesses.name, businessSlug: businesses.slug, customerName: users.name })
       .from(orders)
       .innerJoin(businesses, eq(businesses.id, orders.businessId))
       .innerJoin(users, eq(users.id, orders.customerId));
@@ -65,11 +66,12 @@ export class OrdersRepository {
       .from(orderItems)
       .where(inArray(orderItems.orderId, rows.map((r) => r.order.id)));
     const byOrder = Map.groupBy(items, (i) => i.orderId);
-    return rows.map(({ order: o, businessName, customerName }) => ({
+    return rows.map(({ order: o, businessName, businessSlug, customerName }) => ({
       id: o.id,
       number: o.number,
       businessId: o.businessId,
       businessName,
+      businessSlug,
       customerId: o.customerId,
       customerName,
       status: o.status,
@@ -83,6 +85,7 @@ export class OrdersRepository {
       })),
       subtotal: o.subtotal,
       deliveryFee: o.deliveryFee,
+      discount: o.discount,
       total: o.total,
       currency: o.currency,
       address: o.address,

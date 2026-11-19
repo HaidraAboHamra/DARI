@@ -22,6 +22,7 @@ interface CartApi {
   subtotal: number;
   add(business: Omit<Cart, 'lines'>, line: Omit<CartLine, 'quantity'>): 'added' | 'replaced';
   setQuantity(productId: string, quantity: number): void;
+  replace(cart: Cart): void;
   clear(): void;
 }
 
@@ -80,6 +81,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clear = useCallback(() => setCart(null), []);
+  const replace = useCallback((next: Cart) => setCart(next.lines.length ? next : null), []);
 
   const value = useMemo<CartApi>(
     () => ({
@@ -88,9 +90,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       subtotal: cart?.lines.reduce((n, l) => n + l.quantity * l.price, 0) ?? 0,
       add,
       setQuantity,
+      replace,
       clear,
     }),
-    [cart, add, setQuantity, clear],
+    [cart, add, setQuantity, replace, clear],
   );
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

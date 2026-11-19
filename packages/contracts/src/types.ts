@@ -79,6 +79,7 @@ export interface BusinessSummary {
   ratingAvg: number;
   ratingCount: number;
   isVerified: boolean;
+  isFeatured: boolean;
   acceptsOrders: boolean;
 }
 
@@ -128,6 +129,7 @@ export interface Order {
   number: string;
   businessId: string;
   businessName: string;
+  businessSlug: string;
   customerId: string;
   customerName: string | null;
   status: OrderStatus;
@@ -135,6 +137,7 @@ export interface Order {
   items: OrderItem[];
   subtotal: number;
   deliveryFee: number;
+  discount: number;
   total: number;
   currency: string;
   address: Place | null;

@@ -4,6 +4,7 @@ import type { FulfillmentType } from '@dari/contracts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
+import { previewCoupon } from '@/actions/marketing';
 import { placeOrder } from '@/actions/orders';
 import { track } from '@/components/analytics/track';
 import { useCart } from '@/components/cart/cart-context';
@@ -18,6 +19,9 @@ export function Checkout() {
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [coupon, setCoupon] = useState<{ code: string; discount: number; title?: string } | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   // One key per checkout attempt: retries of the same submit never create duplicate orders.
   const idempotencyKey = useMemo(() => crypto.randomUUID(), [cart?.businessId]);
@@ -42,6 +46,7 @@ export function Checkout() {
           items: cart.lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
           ...(fulfillment === 'delivery' && { address: { text: address.trim() } }),
           ...(notes.trim() && { notes: notes.trim() }),
+          ...(coupon && { couponCode: coupon.code }),
         },
         idempotencyKey,
       );
@@ -102,8 +107,30 @@ export function Checkout() {
         <Field label="ملاحظات للمحل">
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="بدون بصل، الطابق الثاني…" maxLength={500} />
         </Field>
+        <div className="flex gap-2">
+          <Input value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="كود الخصم" dir="ltr" className="!py-2 font-mono" />
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={!couponCode}
+            onClick={async () => {
+              const r = await previewCoupon(cart.businessId, couponCode, subtotal);
+              if (r.error || r.discount === undefined) {
+                setCoupon(null);
+                setCouponError(r.error ?? 'الكوبون غير صالح');
+              } else {
+                setCoupon({ code: couponCode, discount: r.discount, title: r.title });
+                setCouponError(null);
+              }
+            }}
+          >
+            تطبيق
+          </Button>
+        </div>
+        {couponError && <p className="text-xs text-danger">{couponError}</p>}
         <dl className="flex flex-col gap-1 text-sm">
           <div className="flex justify-between"><dt className="text-muted">المجموع</dt><dd className="font-semibold">{money(subtotal)}</dd></div>
+          {coupon && <div className="flex justify-between text-success"><dt>{coupon.title ?? coupon.code}</dt><dd>− {money(coupon.discount)}</dd></div>}
           {fulfillment === 'delivery' && <div className="flex justify-between"><dt className="text-muted">التوصيل</dt><dd className="text-muted">يُحسب عند التأكيد</dd></div>}
         </dl>
         <FormError message={error} />

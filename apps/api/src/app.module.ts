@@ -8,6 +8,7 @@ import { loadEnv } from './config/env';
 import { DatabaseModule } from './infrastructure/database/database.module';
 import { QueueModule } from './infrastructure/queue/queue.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
@@ -15,6 +16,7 @@ import { CatalogModule } from './modules/catalog/catalog.module';
 import { DeliveryModule } from './modules/delivery/delivery.module';
 import { InsightsModule } from './modules/insights/insights.module';
 import { JobsModule } from './modules/jobs/jobs.module';
+import { MarketingModule } from './modules/marketing/marketing.module';
 import { MediaModule } from './modules/media/media.module';
 import { NewsModule } from './modules/news/news.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -78,6 +80,8 @@ export const CORE_MODULES = [
     EventsModule,
     PropertyModule,
     MediaModule,
+    MarketingModule,
+    AdminModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: HttpErrorFilter }],
 })

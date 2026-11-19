@@ -27,6 +27,7 @@ import { CitiesService } from '../cities/cities.service';
 import { BusinessAccessService } from '../directory/business-access.service';
 import { BusinessesService } from '../directory/businesses.service';
 import { roleAllows } from '../directory/business-permissions';
+import { MarketingService } from '../marketing/marketing.service';
 import { OutboxService } from '../platform/outbox.service';
 import { newReference } from '../../common/reference';
 import { OrdersRepository } from './orders.repository';
@@ -45,6 +46,7 @@ export class OrdersService {
     private readonly cities: CitiesService,
     private readonly catalog: CatalogService,
     private readonly outbox: OutboxService,
+    private readonly marketing: MarketingService,
   ) {}
 
   /**
@@ -85,6 +87,8 @@ export class OrdersService {
         }
 
         const deliveryFee = input.fulfillment === 'delivery' ? (business.deliveryFee ?? city.config.deliveryBaseFee) : 0;
+        const coupon = input.couponCode ? await this.marketing.redeem(tx, business.id, input.couponCode, subtotal) : null;
+        const discount = coupon?.discount ?? 0;
         const [order] = await tx
           .insert(orders)
           .values({
@@ -95,7 +99,9 @@ export class OrdersService {
             fulfillment: input.fulfillment,
             subtotal,
             deliveryFee,
-            total: subtotal + deliveryFee,
+            discount,
+            couponId: coupon?.couponId ?? null,
+            total: subtotal - discount + deliveryFee,
             currency: city.currency,
             address: input.address ?? null,
             notes: input.notes ?? null,
@@ -178,6 +184,7 @@ export class OrdersService {
 
     if (RELEASES_STOCK.has(to)) {
       await this.releaseStock(tx, orderId);
+      if (current.couponId) await this.marketing.release(tx, current.couponId);
       await tx
         .update(deliveryTasks)
         .set({ status: 'cancelled' })

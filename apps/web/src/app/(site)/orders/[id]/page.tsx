@@ -1,10 +1,11 @@
-import { nextOrderStatuses, type Order, type OrderStatus } from '@dari/contracts';
+import { nextOrderStatuses, type Order, type OrderStatus, type Product } from '@dari/contracts';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { OrderActions } from '@/components/orders/order-actions';
+import { ReorderButton } from '@/components/orders/reorder-button';
 import { CheckIcon } from '@/components/ui/icons';
 import { PageHeader } from '@/components/ui/primitives';
-import { apiOrNull } from '@/lib/api';
+import { api, apiOrNull } from '@/lib/api';
 import { money, timeAgo } from '@/lib/format';
 import { requireUser } from '@/lib/guards';
 import { ORDER_STATUS_LABEL } from '@/lib/labels';
@@ -57,12 +58,21 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         ))}
         <dl className="flex flex-col gap-1 p-4 text-sm">
           <div className="flex justify-between"><dt className="text-muted">المجموع</dt><dd>{money(order.subtotal, order.currency)}</dd></div>
+          {order.discount > 0 && <div className="flex justify-between text-success"><dt>الخصم</dt><dd>− {money(order.discount, order.currency)}</dd></div>}
           <div className="flex justify-between"><dt className="text-muted">التوصيل</dt><dd>{money(order.deliveryFee, order.currency)}</dd></div>
           <div className="flex justify-between text-base font-bold text-navy"><dt>الإجمالي</dt><dd>{money(order.total, order.currency)}</dd></div>
         </dl>
       </section>
       {order.address && <p className="text-sm text-muted">📍 {order.address.text}</p>}
       {customerActions.length > 0 && <OrderActions orderId={order.id} actions={customerActions} path={`/orders/${order.id}`} />}
+      {order.customerId === user.id && (order.status === 'delivered' || order.status === 'picked_up' || order.status === 'cancelled') && (
+        <Reorder order={order} />
+      )}
     </div>
   );
+}
+
+async function Reorder({ order }: { order: Order }) {
+  const menu = await api<Product[]>(`/businesses/${order.businessId}/products`).catch(() => []);
+  return <ReorderButton order={order} menu={menu} />;
 }

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { BusinessDetail, BusinessStatus, BusinessSummary, Membership, Page, Vertical } from '@dari/contracts';
-import { aliasedTable, and, desc, eq, inArray, lt, or, type SQL } from 'drizzle-orm';
+import { aliasedTable, and, desc, eq, inArray, lt, or, type SQL, sql } from 'drizzle-orm';
 import { decodeCursor, toPage } from '../../common/pagination/cursor';
 import { DB_READ, type Database, type DbExecutor } from '../../infrastructure/database/database.module';
 import { areas, businesses, businessMembers, categories } from '../../infrastructure/database/schema';
@@ -65,20 +65,30 @@ export class BusinessesRepository {
     if (filter.categoryId) conditions.push(eq(businesses.categoryId, filter.categoryId));
     if (filter.areaId) conditions.push(eq(businesses.areaId, filter.areaId));
 
-    const cursor = decodeCursor<[number, string]>(filter.cursor, 2);
+    // Paid featured placement first (blueprint §17), then rating; keyset on (featured, rating, id).
+    const featured = sql<number>`(case when ${businesses.featuredUntil} > now() then 1 else 0 end)`;
+    const cursor = decodeCursor<[number, number, string]>(filter.cursor, 3);
     if (cursor) {
-      const [rating, id] = cursor;
+      const [f, rating, id] = cursor;
       conditions.push(
-        or(lt(businesses.ratingAvg, rating), and(eq(businesses.ratingAvg, rating), lt(businesses.id, id)))!,
+        or(
+          lt(featured, f),
+          and(sql`${featured} = ${f}`, lt(businesses.ratingAvg, rating)),
+          and(sql`${featured} = ${f}`, eq(businesses.ratingAvg, rating), lt(businesses.id, id)),
+        )!,
       );
     }
 
-    const rows = await this.baseQuery(this.read)
+    const rows = await this.read
+      .select({ ...summaryColumns, featured })
+      .from(businesses)
+      .leftJoin(category, eq(category.id, businesses.categoryId))
+      .leftJoin(area, eq(area.id, businesses.areaId))
       .where(and(...conditions))
-      .orderBy(desc(businesses.ratingAvg), desc(businesses.id))
+      .orderBy(desc(featured), desc(businesses.ratingAvg), desc(businesses.id))
       .limit(filter.limit + 1);
 
-    return toPage(rows, filter.limit, toSummary, (r) => [r.business.ratingAvg, r.business.id]);
+    return toPage(rows, filter.limit, toSummary, (r) => [r.featured, r.business.ratingAvg, r.business.id]);
   }
 
   async listMemberships(userId: string): Promise<Membership[]> {
@@ -116,6 +126,7 @@ export function toSummary(row: SummaryRow): BusinessSummary {
     ratingAvg: Math.round(b.ratingAvg * 10) / 10,
     ratingCount: b.ratingCount,
     isVerified: b.verifiedAt !== null,
+    isFeatured: b.featuredUntil !== null && b.featuredUntil > new Date(),
     acceptsOrders: b.acceptsOrders,
   };
 }
