@@ -99,3 +99,18 @@ export const searchDemandDaily = pgTable(
     index().on(t.cityId, t.day, t.zeroResults),
   ],
 );
+
+/** Phone push tokens (Expo). One user can have several devices. */
+export const deviceTokens = pgTable(
+  'device_tokens',
+  {
+    token: text().primaryKey(),
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    platform: text().notNull(),
+    lastSeenAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    createdAt: createdAt(),
+  },
+  (t) => [index().on(t.userId)],
+);

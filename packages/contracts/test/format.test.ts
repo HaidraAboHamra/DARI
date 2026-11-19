@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { money, timeAgo } from '../format';
+import { money, timeAgo } from '../src/i18n/format';
 
 describe('format', () => {
   it('formats Syrian pounds with Arabic digits', () => {

@@ -7,6 +7,7 @@ import { ConfigModule } from './config/config.module';
 import { loadEnv } from './config/env';
 import { DatabaseModule } from './infrastructure/database/database.module';
 import { QueueModule } from './infrastructure/queue/queue.module';
+import { PushModule } from './infrastructure/push/push.module';
 import { RealtimeModule } from './infrastructure/realtime/realtime.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
 import { AdminModule } from './modules/admin/admin.module';
@@ -54,6 +55,7 @@ export const CORE_MODULES = [
   DatabaseModule,
   RedisModule,
   RealtimeModule,
+  PushModule,
   QueueModule,
   PlatformModule,
   CitiesModule,

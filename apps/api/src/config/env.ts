@@ -61,6 +61,12 @@ const envSchema = z
       .string()
       .optional()
       .transform((v) => (v ? v : undefined)),
+    /** Phone push delivery: `none` or `expo` (Expo Push Service → APNs/FCM). */
+    PUSH_PROVIDER: z.enum(['none', 'expo']).default('none'),
+    EXPO_ACCESS_TOKEN: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v : undefined)),
     TRUST_PROXY: z
       .enum(['true', 'false'])
       .default('true')

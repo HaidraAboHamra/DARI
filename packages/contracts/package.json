@@ -5,13 +5,38 @@
   "description": "Shared domain enums, validation schemas and API types used by every Dari app.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
-  "dependencies": { "zod": "^4.6.7" },
-  "devDependencies": { "@dari/tsconfig": "workspace:*", "typescript": "5.9.3", "vitest": "^3.2.7" }
+  "dependencies": {
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@dari/tsconfig": "workspace:*",
+    "typescript": "5.9.3",
+    "vitest": "^3.2.7"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./i18n": {
+      "types": "./dist/i18n/index.d.ts",
+      "default": "./dist/i18n/index.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "i18n": [
+        "dist/i18n/index.d.ts"
+      ]
+    }
+  }
 }

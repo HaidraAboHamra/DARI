@@ -1,9 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { Page } from '@dari/contracts';
 import { and, desc, eq, inArray, isNull, lt, type SQL, sql } from 'drizzle-orm';
 import { decodeCursor, toPage } from '../../common/pagination/cursor';
 import { DB, type Database, type DbExecutor } from '../../infrastructure/database/database.module';
-import { notifications } from '../../infrastructure/database/schema';
+import { deviceTokens, notifications } from '../../infrastructure/database/schema';
+import { PushGateway } from '../../infrastructure/push/push.gateway';
 import { RealtimePublisher } from '../../infrastructure/realtime/realtime.module';
 
 export interface NotificationDto {
@@ -30,7 +31,10 @@ export class NotificationsService {
   constructor(
     @Inject(DB) private readonly db: Database,
     private readonly realtime: RealtimePublisher,
+    private readonly push: PushGateway,
   ) {}
+
+  private readonly logger = new Logger(NotificationsService.name);
 
   async notify(items: NewNotification[], db: DbExecutor = this.db): Promise<void> {
     if (!items.length) return;
@@ -39,6 +43,29 @@ export class NotificationsService {
     await Promise.all(
       items.map((n) => this.realtime.publish([n.userId], { type: n.type, title: n.title, body: n.body, data: n.data ?? {} }).catch(() => undefined)),
     );
+    await this.pushToPhones(items).catch((err: unknown) => this.logger.warn({ err }, 'push delivery failed'));
+  }
+
+  async registerDevice(userId: string, token: string, platform: string): Promise<void> {
+    await this.db
+      .insert(deviceTokens)
+      .values({ token, userId, platform })
+      .onConflictDoUpdate({ target: deviceTokens.token, set: { userId, platform, lastSeenAt: sql`now()` } });
+  }
+
+  async unregisterDevice(userId: string, token: string): Promise<void> {
+    await this.db.delete(deviceTokens).where(and(eq(deviceTokens.token, token), eq(deviceTokens.userId, userId)));
+  }
+
+  /** Best effort phone push for each notification; forgets tokens the provider rejects. */
+  private async pushToPhones(items: NewNotification[]): Promise<void> {
+    const userIds = [...new Set(items.map((n) => n.userId))];
+    const devices = await this.db.select().from(deviceTokens).where(inArray(deviceTokens.userId, userIds));
+    if (!devices.length) return;
+    const byUser = Map.groupBy(devices, (d) => d.userId);
+    const messages = items.flatMap((n) => (byUser.get(n.userId) ?? []).map((d) => ({ token: d.token, title: n.title, body: n.body, data: { type: n.type, ...n.data } })));
+    const { invalidTokens } = await this.push.send(messages);
+    if (invalidTokens.length) await this.db.delete(deviceTokens).where(inArray(deviceTokens.token, invalidTokens));
   }
 
   /** Live ping for clients after a set-based fan-out that bypassed notify(). */
