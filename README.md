@@ -69,6 +69,12 @@ Push notifications need an EAS project (`eas init`) and `PUSH_PROVIDER=expo` on 
 Test builds show a «عنوان الخادم» box on the login screen (and open it on first launch), so one APK works
 against any server; they also allow plain-HTTP servers. Store builds have neither.
 
+**Shared VPS with nginx (e.g. next to other sites):** one command, run as root on the server — it adds only
+`/opt/dari`, the Docker stack `dari` and the nginx site `dari-ip` on port 8086, and is safe to re-run for updates:
+```bash
+curl -fsSL https://raw.githubusercontent.com/HaidraAboHamra/DARI/ccr-78982c29-ug2t1b/deploy/vps/install.sh | sudo bash
+```
+
 **Test server for the APK:** on any Linux VPS with Docker:
 ```bash
 git clone <repo> dari && cd dari
