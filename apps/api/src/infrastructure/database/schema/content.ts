@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { doublePrecision, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { createdAt, pk, updatedAt } from './_shared';
 import { businesses } from './directory';
 import { applicationStatusEnum, contentStatusEnum, employmentTypeEnum, jobStatusEnum } from './enums';
@@ -71,6 +71,9 @@ export const articles = pgTable(
     body: text().notNull(),
     category: text(),
     coverUrl: text(),
+    /** Where the story happens (shown on the city map); optional. */
+    lat: doublePrecision(),
+    lng: doublePrecision(),
     status: contentStatusEnum().notNull().default('draft'),
     publishedAt: timestamp({ withTimezone: true }),
     searchText: text().notNull().default(''),

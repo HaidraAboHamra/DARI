@@ -151,6 +151,22 @@ formatting in `@dari/contracts/i18n`) — no duplicated business rules.
    answers from the same results. Next-step buttons are always computed from data.
 4. Per-user/IP hourly quota keeps LLM spend bounded at scale.
 
+## 5e. Location, delivery pricing and the city map
+
+- **Delivery pricing** is a city setting edited by admins (`PUT /v1/admin/cities/:slug/delivery-pricing`):
+  base fee for the first km, per-km fee, minimum, delivery radius and rounding. One shared function
+  (`quoteDelivery`, haversine × 1.3 road factor) prices previews in the apps and is authoritative in the
+  API. A merchant's own flat fee still wins. Checkout and «توصيل أي شي» re-price from the GPS points and
+  refuse addresses beyond the radius.
+- **Precise location** comes from the phone's GPS (`expo-location`) and can be fine-tuned by dragging a
+  pin on the map; it is stored on the device and sent with orders (`address.location`).
+- **City map**: `GET /v1/map/layers` returns every positioned thing (businesses with open state, ongoing
+  and upcoming events, property, geo-tagged news) in one response cached 30 s, so the map is live without
+  per-viewer queries. The 3D map is rendered by the website with MapLibre GL on OpenFreeMap vector tiles
+  (OpenStreetMap data, no API key; extruded buildings, Arabic labels via the RTL text plugin) and embedded
+  in the app's «استكشف» tab through a WebView (`/embed/city-map`, the only framable path); taps post
+  messages back to the app for native navigation. At scale, self-host the tiles.
+
 ## 6. Security
 
 - Tokens never reach browser JavaScript (httpOnly, SameSite=Lax cookies; the

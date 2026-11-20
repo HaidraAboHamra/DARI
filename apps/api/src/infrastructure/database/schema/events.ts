@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { doublePrecision, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { createdAt, pk, updatedAt } from './_shared';
 import { businesses } from './directory';
 import { contentStatusEnum, eventKindEnum, ticketStatusEnum } from './enums';
@@ -23,6 +23,9 @@ export const cityEvents = pgTable(
     description: text().notNull(),
     venue: text().notNull(),
     destination: text(),
+    /** Venue position on the city map; optional. */
+    lat: doublePrecision(),
+    lng: doublePrecision(),
     startsAt: timestamp({ withTimezone: true }).notNull(),
     endsAt: timestamp({ withTimezone: true }),
     capacity: integer().notNull(),

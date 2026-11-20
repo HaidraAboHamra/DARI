@@ -231,6 +231,8 @@ export interface Article {
   coverUrl: string | null;
   status: ContentStatus;
   publishedAt: string | null;
+  /** Where the story happens, for the city map. */
+  location: GeoPoint | null;
 }
 
 export interface Review {

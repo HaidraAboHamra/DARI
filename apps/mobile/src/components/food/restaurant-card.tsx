@@ -26,7 +26,9 @@ export function DeliveryFacts({ b, light }: { b: BusinessSummary; light?: boolea
         <Icon name="bike" size={16} color={color} />
         <T style={{ fontSize: 13, lineHeight: 20, color }}>{b.deliveryFee ? money(b.deliveryFee) : 'توصيل مجاني'}</T>
       </View>
+      {b.distanceKm !== null && <T style={{ fontSize: 13, lineHeight: 20, color }}>{b.distanceKm} كم</T>}
       {b.minOrder > 0 && <T style={{ fontSize: 13, lineHeight: 20, color }}>الحد الأدنى {money(b.minOrder)}</T>}
+      {!b.deliverable && <T style={{ fontSize: 13, lineHeight: 20, color: colors.danger, fontFamily: fonts.bold }}>خارج نطاق التوصيل</T>}
     </View>
   );
 }

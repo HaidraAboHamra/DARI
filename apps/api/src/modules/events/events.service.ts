@@ -74,6 +74,8 @@ export class EventsService {
         capacity: data.capacity,
         price: data.price,
         coverUrl: data.coverUrl ?? null,
+        lat: data.location?.lat ?? null,
+        lng: data.location?.lng ?? null,
         status: data.status,
         searchText: buildSearchText(data.title, data.description, data.venue, data.destination),
       })
@@ -219,6 +221,7 @@ export function toEvent({ event: e, organizerName }: EventRow): CityEvent {
     organizerName,
     businessId: e.businessId,
     organizerId: e.organizerId,
+    location: e.lat !== null && e.lng !== null ? { lat: e.lat, lng: e.lng } : null,
   };
 }
 

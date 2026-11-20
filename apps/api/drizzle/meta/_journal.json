@@ -50,6 +50,13 @@
       "when": 1795140516743,
       "tag": "0006_food_v2",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795144635987,
+      "tag": "0007_geo_content",
+      "breakpoints": true
     }
   ]
 }

@@ -70,6 +70,8 @@ export class NewsService {
         body: data.body,
         category: data.category ?? null,
         coverUrl: data.coverUrl ?? null,
+        lat: data.location?.lat ?? null,
+        lng: data.location?.lng ?? null,
         status: data.status,
         publishedAt: data.status === 'published' ? new Date() : null,
         searchText: buildSearchText(data.title, data.summary, data.category),
@@ -101,5 +103,6 @@ export function toArticle(row: ArticleRow): Article {
     coverUrl: row.coverUrl,
     status: row.status,
     publishedAt: row.publishedAt?.toISOString() ?? null,
+    location: row.lat !== null && row.lng !== null ? { lat: row.lat, lng: row.lng } : null,
   };
 }

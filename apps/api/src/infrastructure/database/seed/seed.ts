@@ -7,6 +7,7 @@ import * as s from '../schema';
 import { AREAS, ARTICLES, BUSINESSES, CATEGORIES, JOBS, SALAMIYAH } from './seed-data';
 import { EVENTS, LISTINGS, RESOURCES } from './seed-extras';
 import { applyFoodUpgrade } from './seed-food-apply';
+import { applyGeoUpgrade } from './seed-geo-apply';
 import { createObjectStorage } from '../../storage/create-storage';
 import type { ObjectStorage } from '../../storage/object-storage';
 
@@ -25,7 +26,8 @@ export async function seed(db: Database, storage?: ObjectStorage): Promise<{ ski
   if (existing) {
     const extras = await seedExtras(db);
     const food = await applyFoodUpgrade(db, SEED_USERS.admin.phone, storage);
-    return { skipped: !extras && !food };
+    const geo = await applyGeoUpgrade(db);
+    return { skipped: !extras && !food && !geo };
   }
 
   await db.transaction(async (tx) => {
@@ -122,6 +124,7 @@ export async function seed(db: Database, storage?: ObjectStorage): Promise<{ ski
   });
   await seedExtras(db);
   await applyFoodUpgrade(db, SEED_USERS.admin.phone, storage);
+  await applyGeoUpgrade(db);
   return { skipped: false };
 }
 

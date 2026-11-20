@@ -11,6 +11,7 @@ import { Button, Card, Empty, Loading, Screen, Section, Stars, styles, T } from 
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useCart } from '@/lib/cart';
+import { pointQuery, useLocation } from '@/lib/location';
 import { useApi } from '@/lib/query';
 import { colors, fonts, radius } from '@/theme';
 
@@ -20,7 +21,9 @@ export default function BusinessPage() {
   const cart = useCart();
   const qc = useQueryClient();
   const [toast, setToast] = useState<string | null>(null);
-  const business = useApi<BusinessDetail>(`/businesses/by-slug/${encodeURIComponent(slug ?? '')}`);
+  const { location } = useLocation();
+  // With the customer's point the page carries their exact delivery fee and distance.
+  const business = useApi<BusinessDetail>(`/businesses/by-slug/${encodeURIComponent(slug ?? '')}`, pointQuery(location));
   const id = business.data?.id ?? null;
   const products = useApi<Product[]>(id && `/businesses/${id}/products`);
   const resources = useApi<BookableResource[]>(id && `/businesses/${id}/resources`);

@@ -41,7 +41,9 @@ How the code maps to the *Salamiyah City OS Master Blueprint* and the
 | Online card / e-wallet payments | ⬜ — cash on delivery + manually recorded transfers today; add a payment-provider port when a Syrian provider is chosen |
 | Native push notifications (FCM/APNs via Expo) | ✅ — `PushGateway` port, device registry, dead-token cleanup (`PUSH_PROVIDER=expo`) |
 | Native iOS/Android app | ✅ — `apps/mobile` (Expo): citizen, merchant live orders, courier board; shares `@dari/contracts` |
-| Zone-based dispatch / ETA / PostGIS nearest search | ⬜ — pull-based board today (ARCHITECTURE §7) |
+| Precise customer location (GPS + map pin) and distance-based delivery pricing set by admins | ✅ — `domain/delivery-pricing.ts`, `/admin` «تسعير التوصيل» |
+| Live 3D city map (businesses, events, property, news) on web and app «استكشف» | ✅ — `/v1/map/layers`, `components/map/city-map-3d.tsx` (MapLibre + OpenFreeMap) |
+| Zone-based dispatch / courier live tracking / PostGIS nearest search | ⬜ — pull-based board today (ARCHITECTURE §7) |
 | Seasonal marketplace collections (olive season, Eid) | 🟡 — expressible through categories, events and jobs; no dedicated "season" entity |
 | Custom domains for merchant websites | ⬜ — every business has a shareable page + QR today |
 

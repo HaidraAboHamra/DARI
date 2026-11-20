@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { CONTENT_STATUSES, EMPLOYMENT_TYPES } from '../enums';
-import { cursorQuerySchema, idSchema, moneySchema, phoneSchema, urlSchema } from './common';
+import { cursorQuerySchema, geoPointSchema, idSchema, moneySchema, phoneSchema, urlSchema } from './common';
 
 export const createJobSchema = z
   .object({
@@ -41,6 +41,7 @@ export const createArticleSchema = z.object({
   category: z.string().trim().max(60).optional(),
   coverUrl: urlSchema.optional(),
   status: z.enum(CONTENT_STATUSES).default('draft'),
+  location: geoPointSchema.optional(),
 });
 export type CreateArticleInput = z.input<typeof createArticleSchema>;
 

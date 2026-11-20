@@ -19,6 +19,7 @@ import { CatalogModule } from './modules/catalog/catalog.module';
 import { DeliveryModule } from './modules/delivery/delivery.module';
 import { InsightsModule } from './modules/insights/insights.module';
 import { JobsModule } from './modules/jobs/jobs.module';
+import { MapModule } from './modules/map/map.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
 import { MediaModule } from './modules/media/media.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
@@ -88,6 +89,7 @@ export const CORE_MODULES = [
     PropertyModule,
     MediaModule,
     MarketingModule,
+  MapModule,
     AdminModule,
     RealtimeApiModule,
     AssistantModule,

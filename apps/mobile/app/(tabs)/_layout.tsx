@@ -36,12 +36,13 @@ function Icon({ d, color, circle }: { d: string; color: string; circle?: boolean
 const ICONS = {
   index: 'M4 21V10a8 8 0 0 1 16 0v11M10 21v-5h4v5',
   food: 'M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 21V3c-2 1.5-3 4-3 7v3h3',
+  explore: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM15.5 8.5l-2 5-5 2 2-5z',
   orders: 'M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2',
   account: 'M4 21a8 8 0 0 1 16 0',
 };
 
 /**
- * Thumb-zone tabs (UX study P0-4): الرئيسية، الطعام (most frequent task), طلباتي، حسابي.
+ * Thumb-zone tabs (UX study P0-4): الرئيسية، الطعام (most frequent task)، استكشف (live 3D map)، طلباتي، حسابي.
  * Every other service stays one tap away on the home grid.
  */
 export default function TabsLayout() {
@@ -76,6 +77,15 @@ export default function TabsLayout() {
           title: 'الطعام',
           tabBarIcon: ({ focused }) => (
             <Icon d={ICONS.food} color={focused ? colors.goldDeep : colors.muted} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'استكشف',
+          tabBarIcon: ({ focused }) => (
+            <Icon d={ICONS.explore} color={focused ? colors.goldDeep : colors.muted} />
           ),
         }}
       />

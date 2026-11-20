@@ -1,6 +1,7 @@
 import {
   type BusinessDetail,
   cartItems,
+  type DeliveryQuote,
   type FulfillmentType,
   makeLine,
   type Order,
@@ -26,6 +27,7 @@ import {
 } from '@/components/ui';
 import { confirmAction } from '@/lib/confirm';
 import { haptic } from '@/lib/haptics';
+import { pointQuery, useLocation } from '@/lib/location';
 import { loadCheckoutPrefs, saveCheckoutPrefs } from '@/lib/prefs';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -40,6 +42,7 @@ function newKey(): string {
 export default function CartScreen() {
   const { user } = useAuth();
   const { cart, subtotal, setQuantity, clear, add } = useCart();
+  const { location } = useLocation();
   const [fulfillment, setFulfillment] = useState<FulfillmentType>('delivery');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
@@ -58,6 +61,11 @@ export default function CartScreen() {
   }, []);
   const business = useApi<BusinessDetail>(
     cart ? `/businesses/by-slug/${encodeURIComponent(cart.businessSlug)}` : null,
+  );
+  // Exact fee for the customer's pin, priced by the server with the admin's city rules.
+  const quote = useApi<DeliveryQuote>(
+    business.data && location && fulfillment === 'delivery' ? `/businesses/${business.data.id}/delivery-quote` : null,
+    pointQuery(location),
   );
   const menu = useApi<Product[]>(business.data ? `/businesses/${business.data.id}/products` : null);
 
@@ -81,7 +89,9 @@ export default function CartScreen() {
   }
 
   const b = business.data;
-  const deliveryFee = fulfillment === 'delivery' ? (b?.deliveryFee ?? 0) : 0;
+  const deliveryFee = fulfillment === 'delivery' ? (quote.data?.fee ?? b?.deliveryFee ?? 0) : 0;
+  const outOfRange = fulfillment === 'delivery' && quote.data !== undefined && !quote.data.deliverable;
+  const needsLocation = fulfillment === 'delivery' && !location;
   const discount = coupon?.discount ?? 0;
   const total = subtotal - discount + deliveryFee;
   const minOrder = b?.minOrder ?? 0;
@@ -104,8 +114,7 @@ export default function CartScreen() {
 
   const submit = async () => {
     if (!user) return router.push('/login');
-    if (fulfillment === 'delivery' && address.trim().length < 3)
-      return setError('أدخل عنوان التوصيل');
+    if (needsLocation) return router.push('/location');
     setBusy(true);
     setError(null);
     try {
@@ -115,7 +124,8 @@ export default function CartScreen() {
           businessId: cart.businessId,
           fulfillment,
           items: cartItems(cart),
-          ...(fulfillment === 'delivery' && { address: { text: address.trim() } }),
+          ...(fulfillment === 'delivery' &&
+            location && { address: { text: address.trim() || location.label, location: location.point } }),
           ...(notes.trim() && { notes: notes.trim() }),
           ...(coupon && { couponCode: coupon.code }),
         },
@@ -348,12 +358,38 @@ export default function CartScreen() {
           />
         </View>
         {fulfillment === 'delivery' && (
-          <Input
-            label="عنوان التوصيل"
-            value={address}
-            onChangeText={setAddress}
-            placeholder="الحي، الشارع، أقرب معلم"
-          />
+          <Card style={{ gap: 10 }}>
+            <Pressable
+              onPress={() => router.push('/location')}
+              accessibilityRole="button"
+              accessibilityLabel="تغيير موقع التوصيل"
+              style={[styles.row, { minHeight: 44 }]}
+            >
+              <Icon name="pin" size={22} color={location ? colors.goldDeep : colors.danger} />
+              <View style={{ flex: 1 }}>
+                <T variant="label">{location ? location.label : 'حدّد موقع التوصيل على الخريطة'}</T>
+                <T variant="small">
+                  {location
+                    ? quote.data
+                      ? `${quote.data.distanceKm} كم من المطعم`
+                      : 'جارٍ حساب سعر التوصيل…'
+                    : 'نحسب سعر التوصيل من موقعك الدقيق'}
+                </T>
+              </View>
+              <T style={{ color: colors.goldDeep, fontFamily: fonts.bold }}>{location ? 'تغيير' : 'تحديد'}</T>
+            </Pressable>
+            {outOfRange && (
+              <T style={{ color: colors.danger, fontFamily: fonts.bold }}>
+                موقعك خارج نطاق توصيل هذا المطعم ({quote.data?.distanceKm} كم، الحد {quote.data?.maxKm} كم)
+              </T>
+            )}
+            <Input
+              label="تفاصيل العنوان (اختياري)"
+              value={address}
+              onChangeText={setAddress}
+              placeholder="البناء، الطابق، علامة مميزة"
+            />
+          </Card>
         )}
         <Input
           label="ملاحظات للمطعم"
@@ -396,7 +432,10 @@ export default function CartScreen() {
             />
           )}
           {fulfillment === 'delivery' && (
-            <Row label="التوصيل" value={deliveryFee ? money(deliveryFee) : 'مجاني'} />
+            <Row
+              label={quote.data ? `التوصيل (${quote.data.distanceKm} كم)` : 'التوصيل'}
+              value={deliveryFee ? money(deliveryFee) : 'مجاني'}
+            />
           )}
           <View style={{ height: 1, backgroundColor: colors.sand }} />
           <Row label="الإجمالي" value={money(total)} bold />
@@ -412,12 +451,12 @@ export default function CartScreen() {
         }}
       >
         <Pressable
-          disabled={busy || short > 0}
+          disabled={busy || short > 0 || outOfRange}
           onPress={() => void submit()}
           style={{
             height: 56,
             borderRadius: radius.pill,
-            backgroundColor: short > 0 ? colors.sand : colors.gold,
+            backgroundColor: short > 0 || outOfRange ? colors.sand : colors.gold,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -427,7 +466,15 @@ export default function CartScreen() {
           accessibilityRole="button"
         >
           <T style={{ fontFamily: fonts.bold, color: colors.navy, fontSize: 16 }}>
-            {busy ? 'جارٍ الإرسال…' : short > 0 ? 'لم تصل للحد الأدنى بعد' : 'تأكيد الطلب'}
+            {busy
+              ? 'جارٍ الإرسال…'
+              : short > 0
+                ? 'لم تصل للحد الأدنى بعد'
+                : outOfRange
+                  ? 'خارج نطاق التوصيل'
+                  : needsLocation
+                    ? 'حدّد موقعك للمتابعة'
+                    : 'تأكيد الطلب'}
           </T>
           <T style={{ fontFamily: fonts.bold, color: colors.navy }}>{money(total)}</T>
         </Pressable>

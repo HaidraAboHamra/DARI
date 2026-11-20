@@ -11,6 +11,7 @@ import { MenuSkeleton } from '@/components/skeleton';
 import { Card, Chip, Empty, IconButton, T } from '@/components/ui';
 import { haptic } from '@/lib/haptics';
 import { useCart } from '@/lib/cart';
+import { useLocation } from '@/lib/location';
 import { config } from '@/lib/config';
 import { useApi } from '@/lib/query';
 import { colors, fonts, radius, shadow } from '@/theme';
@@ -35,6 +36,7 @@ function todayHours(b: BusinessDetail): string | null {
 export function RestaurantView({ b }: { b: BusinessDetail }) {
   const insets = useSafeAreaInsets();
   const cart = useCart();
+  const { location } = useLocation();
   const products = useApi<Product[]>(`/businesses/${b.id}/products`);
   const offers = useApi<Coupon[]>(`/businesses/${b.id}/offers`);
   const [sheet, setSheet] = useState<Product | null>(null);
@@ -125,6 +127,12 @@ export function RestaurantView({ b }: { b: BusinessDetail }) {
               </View>
             </View>
             <DeliveryFacts b={b} />
+            {!location && (
+              <Pressable onPress={() => router.push('/location')} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 }}>
+                <Icon name="pin" size={16} color={colors.goldDeep} />
+                <T style={{ color: colors.goldDeep, fontFamily: fonts.bold, fontSize: 14 }}>حدّد موقعك لسعر التوصيل الدقيق</T>
+              </Pressable>
+            )}
           </View>
 
           {!!offers.data?.length && (

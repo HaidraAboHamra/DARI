@@ -42,7 +42,9 @@ describe('marketing, plans & admin (e2e)', () => {
     const created = await createCoupon();
     expect(created.json()).toMatchObject({ code: 'SAVE10', usedCount: 0 });
     expect((await createCoupon()).json().error.code).toBe('DUPLICATE_CODE');
-    expect((await h.app.inject({ method: 'GET', url: `/api/v1/businesses/${restaurant.id}/offers` })).json()).toHaveLength(1);
+    // Public offers now include it (alongside the demo restaurant's own seeded offer).
+    const offers = (await h.app.inject({ method: 'GET', url: `/api/v1/businesses/${restaurant.id}/offers` })).json<{ code: string }[]>();
+    expect(offers.map((o) => o.code)).toContain('SAVE10');
   });
 
   it('applies a coupon at checkout atomically and returns the use on cancellation', async () => {

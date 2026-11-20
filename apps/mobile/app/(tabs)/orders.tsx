@@ -21,7 +21,7 @@ export default function Orders() {
         ) : orders.isLoading ? (
           <Loading />
         ) : !orders.data?.items.length ? (
-          <Empty title="لا توجد طلبات بعد"><Button title="تصفّح المطاعم" onPress={() => router.push('/explore/food')} /></Empty>
+          <Empty title="لا توجد طلبات بعد"><Button title="تصفّح المطاعم" onPress={() => router.push('/category/food')} /></Empty>
         ) : (
           orders.data.items.map((o) => (
             <Card key={o.id} onPress={() => router.push(`/orders/${o.id}`)} style={[styles.row, { justifyContent: 'space-between' }] as never}>

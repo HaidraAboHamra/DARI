@@ -87,7 +87,7 @@ export default function Home() {
           <Section title="كل الخدمات">
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: space(4) }}>
               {VERTICALS.filter((v) => v !== 'food').map((v) => (
-                <Pressable key={v} onPress={() => router.push((ROUTE[v] ?? `/explore/${v}`) as never)} accessibilityRole="button" style={{ width: '25%', alignItems: 'center', gap: 6, minHeight: 44 }}>
+                <Pressable key={v} onPress={() => router.push((ROUTE[v] ?? `/category/${v}`) as never)} accessibilityRole="button" style={{ width: '25%', alignItems: 'center', gap: 6, minHeight: 44 }}>
                   <ServiceTile vertical={v} />
                   <T style={{ fontSize: 13, lineHeight: 20, fontFamily: fonts.medium, textAlign: 'center' }}>{VERTICAL_META[v].labelAr}</T>
                 </Pressable>

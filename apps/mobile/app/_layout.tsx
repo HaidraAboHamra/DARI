@@ -14,6 +14,7 @@ import { Intro } from '@/components/intro';
 import { introMode } from '@/lib/prefs';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { CartProvider } from '@/lib/cart';
+import { LocationProvider } from '@/lib/location';
 import { queryClient } from '@/lib/query';
 import { isServerConfigured } from '@/lib/server';
 import { colors, fonts } from '@/theme';
@@ -68,6 +69,10 @@ function Navigator() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ title: 'تسجيل الدخول', presentation: 'modal' }} />
           <Stack.Screen name="cart" options={{ title: 'السلة' }} />
+          <Stack.Screen
+            name="location"
+            options={{ title: 'موقع التوصيل', presentation: 'modal' }}
+          />
           <Stack.Screen name="assistant" options={{ title: 'مساعد المدينة' }} />
         </Stack>
       )}
@@ -82,8 +87,10 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <CartProvider>
-            <StatusBar style="dark" />
-            <Navigator />
+            <LocationProvider>
+              <StatusBar style="dark" />
+              <Navigator />
+            </LocationProvider>
           </CartProvider>
         </AuthProvider>
       </QueryClientProvider>

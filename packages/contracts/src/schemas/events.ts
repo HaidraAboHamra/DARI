@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { CONTENT_STATUSES, EVENT_KINDS } from '../enums';
-import { cursorQuerySchema, idSchema, moneySchema, urlSchema } from './common';
+import { cursorQuerySchema, geoPointSchema, idSchema, moneySchema, urlSchema } from './common';
 
 export const createEventSchema = z
   .object({
@@ -17,6 +17,7 @@ export const createEventSchema = z
     price: moneySchema.default(0),
     coverUrl: urlSchema.optional(),
     status: z.enum(CONTENT_STATUSES).default('published'),
+    location: geoPointSchema.optional(),
   })
   .refine((e) => !e.endsAt || e.endsAt > e.startsAt, { message: 'وقت الانتهاء قبل البداية', path: ['endsAt'] });
 export type CreateEventInput = z.input<typeof createEventSchema>;

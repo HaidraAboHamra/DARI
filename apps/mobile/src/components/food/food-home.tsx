@@ -13,6 +13,7 @@ import { RestaurantCardSkeleton } from '@/components/skeleton';
 import { Chip, Empty, IconButton, T } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { useCart } from '@/lib/cart';
+import { pointQuery, useLocation } from '@/lib/location';
 import { config } from '@/lib/config';
 import { useApi, usePaged } from '@/lib/query';
 import { colors, fonts, radius, shadow } from '@/theme';
@@ -44,12 +45,13 @@ export function FoodHome() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const cart = useCart();
+  const { location } = useLocation();
   const [categoryId, setCategoryId] = useState<string | undefined>();
   const [sort, setSort] = useState<Sort>('recommended');
 
   const categories = useApi<Category[]>('/categories', { vertical: 'food' });
   const offers = useApi<CityOffer[]>('/offers', { city: config.city, vertical: 'food' });
-  const list = usePaged<BusinessSummary>('/businesses', { city: config.city, vertical: 'food', categoryId }, 50);
+  const list = usePaged<BusinessSummary>('/businesses', { city: config.city, vertical: 'food', categoryId, ...pointQuery(location) }, 50);
   const recent = useApi<Page<Order>>(user ? '/orders' : null, { limit: 20 });
 
   const offerBy = useMemo(() => new Map((offers.data ?? []).map((o) => [o.business.id, o.coupon])), [offers.data]);
@@ -86,13 +88,15 @@ export function FoodHome() {
         {/* Header */}
         <View style={{ backgroundColor: colors.navy, paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 22, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, gap: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <View style={{ flex: 1 }}>
+            {/* Precise delivery point: fees and distances below are priced from it. */}
+            <Pressable onPress={() => router.push('/location')} accessibilityRole="button" accessibilityLabel="تغيير موقع التوصيل" style={{ flex: 1, minHeight: 44, justifyContent: 'center' }}>
               <T style={{ color: '#F6F0E0B3', fontSize: 13, lineHeight: 20 }}>التوصيل إلى</T>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <Icon name="pin" size={16} color={colors.gold} />
-                <T style={{ color: colors.ivory, fontFamily: fonts.bold }}>سلمية</T>
+                <T style={{ color: colors.ivory, fontFamily: fonts.bold, flexShrink: 1 }} numberOfLines={1}>{location ? location.label : 'حدّد موقعك لسعر توصيل دقيق'}</T>
+                <Icon name="chevron" size={16} color={colors.champagne} />
               </View>
-            </View>
+            </Pressable>
             <IconButton icon="bag" label={`السلة (${cart.count})`} tone="night" badge={cart.count} onPress={() => router.push('/cart')} />
           </View>
           <View style={{ gap: 2 }}>

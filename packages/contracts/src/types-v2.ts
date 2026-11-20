@@ -104,6 +104,8 @@ export interface CityEvent {
   organizerName: string | null;
   businessId: string | null;
   organizerId: string;
+  /** Venue position, for the city map. */
+  location: GeoPoint | null;
 }
 
 export interface Ticket {
@@ -229,4 +231,16 @@ export interface SmartInsight {
   severity: 'info' | 'warning' | 'critical';
   title: string;
   detail: string;
+}
+
+/** Everything with a position in a city, for the live 3D map (one cached call). */
+export interface MapLayers {
+  center: GeoPoint;
+  businesses: { id: string; slug: string; name: string; vertical: Vertical; categoryName: string | null; lat: number; lng: number; isOpen: boolean; ratingAvg: number; logoUrl: string | null }[];
+  /** Upcoming and ongoing events; `live` = happening now. */
+  events: { id: string; title: string; kind: EventKind; venue: string; startsAt: string; lat: number; lng: number; live: boolean; price: number }[];
+  listings: { id: string; title: string; purpose: ListingPurpose; propertyType: PropertyType; price: number; lat: number; lng: number }[];
+  /** Geo-tagged news of the last 30 days; `fresh` = last 24 hours. */
+  news: { slug: string; title: string; summary: string; category: string | null; publishedAt: string; lat: number; lng: number; fresh: boolean }[];
+  generatedAt: string;
 }
