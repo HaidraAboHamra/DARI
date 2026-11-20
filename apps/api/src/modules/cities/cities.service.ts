@@ -1,13 +1,18 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { Area, Category, City, Vertical } from '@dari/contracts';
+import { type Area, type Category, type City, defaultPricing, type DeliveryPricing, type Vertical } from '@dari/contracts';
 import { asc, eq } from 'drizzle-orm';
 import { NotFoundError } from '../../common/errors/app-error';
-import { DB_READ, type Database } from '../../infrastructure/database/database.module';
+import { DB, DB_READ, type Database } from '../../infrastructure/database/database.module';
 import { areas, categories, cities, type CityConfig } from '../../infrastructure/database/schema';
 import { CacheService } from '../../infrastructure/redis/cache.service';
 
 export interface CityRecord extends City {
   config: CityConfig;
+}
+
+/** The city's delivery pricing (admin-set, or derived from its flat base fee). */
+export function cityPricing(config: CityConfig): DeliveryPricing {
+  return config.deliveryPricing ?? defaultPricing(config.deliveryBaseFee);
 }
 
 export interface CategoryWithKeywords extends Category {
@@ -21,8 +26,22 @@ const TTL_SECONDS = 300;
 export class CitiesService {
   constructor(
     @Inject(DB_READ) private readonly db: Database,
+    @Inject(DB) private readonly write: Database,
     private readonly cache: CacheService,
   ) {}
+
+  async deliveryPricing(slug: string): Promise<DeliveryPricing> {
+    return cityPricing((await this.getBySlug(slug)).config);
+  }
+
+  /** Admin: replace the city's delivery pricing (flat base fee kept in sync for older readers). */
+  async setDeliveryPricing(slug: string, pricing: DeliveryPricing): Promise<DeliveryPricing> {
+    const city = await this.getBySlug(slug);
+    const config: CityConfig = { ...city.config, deliveryPricing: pricing, deliveryBaseFee: pricing.baseFee };
+    await this.write.update(cities).set({ config }).where(eq(cities.id, city.id));
+    await Promise.all([this.cache.invalidate(`city:slug:${slug}`), this.cache.invalidate(`city:id:${city.id}`)]);
+    return pricing;
+  }
 
   async list(): Promise<City[]> {
     return this.cache.getOrSet('cities:active', TTL_SECONDS, async () => {

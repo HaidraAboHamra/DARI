@@ -1,12 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { CreateDeliveryInput, DeliveryStatus, DeliveryTask, Page } from '@dari/contracts';
+import { type CreateDeliveryInput, type DeliveryStatus, type DeliveryTask, type Page, quoteDelivery } from '@dari/contracts';
 import { and, desc, eq, gte, lt, type SQL, sql } from 'drizzle-orm';
 import type { AuthUser } from '../../common/auth/auth-user';
 import { ConflictError, ForbiddenError, NotFoundError } from '../../common/errors/app-error';
 import { decodeCursor, toPage } from '../../common/pagination/cursor';
 import { DB, type Database } from '../../infrastructure/database/database.module';
 import { businesses, deliveryTasks, orders } from '../../infrastructure/database/schema';
-import { CitiesService } from '../cities/cities.service';
+import { CitiesService, cityPricing } from '../cities/cities.service';
 import { OutboxService } from '../platform/outbox.service';
 import { OrdersService } from '../orders/orders.service';
 
@@ -34,6 +34,12 @@ export class DeliveryService {
 
   async request(user: AuthUser, input: CreateDeliveryInput): Promise<DeliveryTask> {
     const city = await this.cities.getBySlug(input.citySlug);
+    // «توصيل أي شي»: priced by the distance between the two pins when both are set.
+    const pricing = cityPricing(city.config);
+    const quote = input.pickup.location && input.dropoff.location ? quoteDelivery(pricing, input.pickup.location, input.dropoff.location) : null;
+    if (quote && !quote.deliverable) {
+      throw new ConflictError(`المسافة ${quote.distanceKm} كم أكبر من نطاق التوصيل (${quote.maxKm} كم)`, 'OUT_OF_RANGE', { distanceKm: quote.distanceKm });
+    }
     const row = await this.db.transaction(async (tx) => {
       const [task] = await tx
         .insert(deliveryTasks)
@@ -46,7 +52,7 @@ export class DeliveryService {
           itemDescription: input.itemDescription,
           notes: input.notes ?? null,
           scheduledFor: input.scheduledFor ?? null,
-          fee: city.config.deliveryBaseFee,
+          fee: quote?.fee ?? pricing.baseFee,
         })
         .returning();
       await this.outbox.record(tx, {

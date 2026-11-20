@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   canTransition,
+  businessQuote,
   type CreateOrderInput,
   type ListOrdersQuery,
   type Order,
@@ -26,7 +27,7 @@ import {
   products,
 } from '../../infrastructure/database/schema';
 import { CatalogService } from '../catalog/catalog.service';
-import { CitiesService } from '../cities/cities.service';
+import { CitiesService, cityPricing } from '../cities/cities.service';
 import { BusinessAccessService } from '../directory/business-access.service';
 import { BusinessesService } from '../directory/businesses.service';
 import { roleAllows } from '../directory/business-permissions';
@@ -100,7 +101,15 @@ export class OrdersService {
         for (const l of lines) perProduct.set(l.product.id, (perProduct.get(l.product.id) ?? 0) + l.item.quantity);
         for (const [productId, quantity] of perProduct) await this.reserveStock(tx, productId, quantity);
 
-        const deliveryFee = input.fulfillment === 'delivery' ? business.deliveryFee : 0;
+        // Distance-priced from the customer's GPS point when given (admin-set city rules), else the base fee.
+        let deliveryFee = 0;
+        if (input.fulfillment === 'delivery') {
+          const quote = businessQuote(business, cityPricing(city.config), input.address?.location);
+          if (!quote.deliverable) {
+            throw new ConflictError(`عنوانك خارج نطاق توصيل ${business.name} (${quote.distanceKm} كم)`, 'OUT_OF_RANGE', { distanceKm: quote.distanceKm });
+          }
+          deliveryFee = quote.fee;
+        }
         const coupon = input.couponCode ? await this.marketing.redeem(tx, business.id, input.couponCode, subtotal) : null;
         const discount = coupon?.discount ?? 0;
         const [order] = await tx

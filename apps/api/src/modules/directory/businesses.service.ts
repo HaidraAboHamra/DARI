@@ -1,6 +1,9 @@
 import { randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  businessQuote,
+  type DeliveryQuote,
+  type GeoPoint,
   type AddMemberInput,
   type BusinessDetail,
   type BusinessRole,
@@ -20,7 +23,7 @@ import { ConflictError, NotFoundError, ValidationError } from '../../common/erro
 import { DB, type Database, type DbExecutor } from '../../infrastructure/database/database.module';
 import { areas, businesses, businessMembers, categories, users } from '../../infrastructure/database/schema';
 import { CacheService } from '../../infrastructure/redis/cache.service';
-import { CitiesService } from '../cities/cities.service';
+import { CitiesService, cityPricing } from '../cities/cities.service';
 import { AuditService } from '../platform/audit.service';
 import { OutboxService } from '../platform/outbox.service';
 import { UsersService } from '../users/users.service';
@@ -47,7 +50,24 @@ export class BusinessesService {
 
   async list(query: ListBusinessesQuery): Promise<Page<BusinessSummary>> {
     const city = await this.cities.getBySlug(query.city);
-    return this.repo.listActive({ ...query, cityId: city.id });
+    const from = query.lat !== undefined && query.lng !== undefined ? { lat: query.lat, lng: query.lng } : undefined;
+    return this.repo.listActive({ ...query, cityId: city.id, from });
+  }
+
+  /** Delivery offer from a business to a customer location (distance-priced by the city's rules). */
+  async deliveryQuote(id: string, to: GeoPoint): Promise<DeliveryQuote> {
+    const business = await this.getActiveById(id);
+    const pricing = cityPricing((await this.cities.getById(business.cityId)).config);
+    const quote = businessQuote(business, pricing, to);
+    return { fee: quote.fee, distanceKm: quote.distanceKm ?? 0, deliverable: quote.deliverable, maxKm: pricing.maxKm };
+  }
+
+  /** Re-prices a (cached) business page for a customer location. */
+  async forCustomer<T extends BusinessDetail>(business: T, to: GeoPoint | undefined): Promise<T> {
+    if (!to) return business;
+    const pricing = cityPricing((await this.cities.getById(business.cityId)).config);
+    const quote = businessQuote(business, pricing, to);
+    return { ...business, deliveryFee: quote.fee, distanceKm: quote.distanceKm, deliverable: quote.deliverable };
   }
 
   async mapPoints(citySlug: string, vertical?: Vertical) {
@@ -56,14 +76,14 @@ export class BusinessesService {
   }
 
   /** Public business page. Non-active businesses are visible to their members only. */
-  async getPublicPage(slug: string, viewer: AuthUser | null): Promise<BusinessDetail> {
+  async getPublicPage(slug: string, viewer: AuthUser | null, customer?: GeoPoint): Promise<BusinessDetail> {
     const business = await this.cache.getOrSet(this.pageKey(slug), PAGE_CACHE_TTL, () => this.repo.findBySlug(slug));
     if (!business) throw new NotFoundError('النشاط التجاري');
     if (business.status !== 'active') {
       const allowed = viewer && (viewer.role === 'admin' || (await this.access.roleOf(viewer.id, business.id)));
       if (!allowed) throw new NotFoundError('النشاط التجاري');
     }
-    return business;
+    return this.forCustomer(business, customer);
   }
 
   async getActiveById(id: string, db?: DbExecutor): Promise<BusinessDetail> {

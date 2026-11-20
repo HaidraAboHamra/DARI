@@ -58,3 +58,16 @@ export async function publishArticle(_: ActionState, form: FormData): Promise<Ac
     return toActionError(err);
   }
 }
+
+export async function saveDeliveryPricing(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await api(`/admin/cities/${str(form, 'city')}/delivery-pricing`, {
+      method: 'PUT',
+      body: { baseFee: int(form, 'baseFee'), perKm: int(form, 'perKm'), minFee: int(form, 'minFee'), maxKm: Number(str(form, 'maxKm')), roundTo: int(form, 'roundTo') },
+    });
+    revalidatePath('/admin');
+    return { ok: true, message: 'تم حفظ تسعير التوصيل — يُطبّق على الطلبات الجديدة فوراً' };
+  } catch (err) {
+    return toActionError(err);
+  }
+}

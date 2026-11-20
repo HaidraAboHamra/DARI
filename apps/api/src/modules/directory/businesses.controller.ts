@@ -14,6 +14,8 @@ import {
   type UpdateBusinessInput,
   updateBusinessSchema,
   VERTICALS,
+  type DeliveryQuote,
+  type GeoPoint,
 } from '@dari/contracts';
 import { z } from 'zod';
 import type { AuthUser } from '../../common/auth/auth-user';
@@ -22,6 +24,10 @@ import { zod } from '../../common/validation/zod.pipe';
 import { BusinessesService } from './businesses.service';
 
 const statusBody = z.object({ status: z.enum(BUSINESS_STATUSES) });
+/** Optional customer position (query string) for per-distance fees. */
+const customerPoint = z.object({ lat: z.coerce.number().min(-90).max(90).optional(), lng: z.coerce.number().min(-180).max(180).optional() });
+/** Required position for a delivery quote. */
+const geoPointQuery = z.object({ lat: z.coerce.number().min(-90).max(90), lng: z.coerce.number().min(-180).max(180) });
 const mapQuery = z.object({ city: z.string().trim().min(2).max(60), vertical: z.enum(VERTICALS).optional() });
 const statusQuery = z.object({ status: z.enum(BUSINESS_STATUSES).default('pending_review') });
 
@@ -43,8 +49,15 @@ export class BusinessesController {
 
   @Public()
   @Get('businesses/by-slug/:slug')
-  bySlug(@Param('slug') slug: string, @OptionalUser() viewer: AuthUser | null): Promise<BusinessDetail> {
-    return this.businesses.getPublicPage(slug, viewer);
+  bySlug(@Param('slug') slug: string, @OptionalUser() viewer: AuthUser | null, @Query(zod(customerPoint)) at: z.infer<typeof customerPoint>): Promise<BusinessDetail> {
+    return this.businesses.getPublicPage(slug, viewer, at.lat !== undefined && at.lng !== undefined ? { lat: at.lat, lng: at.lng } : undefined);
+  }
+
+  /** Delivery fee and distance to the customer's precise location (shown before checkout). */
+  @Public()
+  @Get('businesses/:id/delivery-quote')
+  deliveryQuote(@Param('id', ParseUUIDPipe) id: string, @Query(zod(geoPointQuery)) to: GeoPoint): Promise<DeliveryQuote> {
+    return this.businesses.deliveryQuote(id, to);
   }
 
   @Post('businesses')

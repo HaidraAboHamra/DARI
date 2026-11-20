@@ -81,8 +81,12 @@ export interface BusinessSummary {
   isVerified: boolean;
   isFeatured: boolean;
   acceptsOrders: boolean;
-  /** Effective delivery fee (business-specific or the city default). */
+  /** Delivery fee to the requesting customer (distance-priced when their location is known). */
   deliveryFee: number;
+  /** Road km to the customer, when their location was given. */
+  distanceKm: number | null;
+  /** False when the customer is beyond the city's delivery radius. */
+  deliverable: boolean;
   /** Typical preparation time in minutes; ETA ≈ prep + local delivery. */
   prepMinutes: number;
   /** Minimum order subtotal; 0 = none. */

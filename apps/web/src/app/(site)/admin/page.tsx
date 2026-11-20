@@ -1,4 +1,4 @@
-import { type BusinessDetail, type BusinessSummary, type CityKpis, type DemandInsight, type Page, VERTICAL_META, type Vertical } from '@dari/contracts';
+import { type BusinessDetail, type BusinessSummary, type CityKpis, type DeliveryPricing, type DemandInsight, type Page, VERTICAL_META, type Vertical } from '@dari/contracts';
 import type { Metadata } from 'next';
 import { setBusinessStatus } from '@/actions/merchant';
 import { SubmitButton } from '@/components/ui/submit-button';
@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { config } from '@/lib/config';
 import { money, number, percent, timeAgo } from '@/lib/format';
 import { requireUser } from '@/lib/guards';
-import { FeatureForm, PaymentForm, RoleForm } from './admin-forms';
+import { DeliveryPricingForm, FeatureForm, PaymentForm, RoleForm } from './admin-forms';
 
 export const metadata: Metadata = { title: 'ذكاء المدينة' };
 
@@ -22,7 +22,7 @@ interface Opportunity {
 export default async function AdminPage() {
   await requireUser('/admin', ['admin']);
   const q = { city: config.city, days: 7 };
-  const [kpis, zero, top, opportunities, queue, revenue, directory] = await Promise.all([
+  const [kpis, zero, top, opportunities, queue, revenue, directory, pricing] = await Promise.all([
     api<CityKpis>('/admin/insights/kpis', { query: q }),
     api<DemandInsight[]>('/admin/insights/demand', { query: { ...q, zeroOnly: true } }),
     api<DemandInsight[]>('/admin/insights/demand', { query: q }),
@@ -30,6 +30,7 @@ export default async function AdminPage() {
     api<BusinessDetail[]>('/admin/businesses', { query: { status: 'pending_review' } }),
     api<{ subscriptionRevenue30d: number; payingBusinesses: number }>('/admin/revenue'),
     api<Page<BusinessSummary>>('/businesses', { query: { city: config.city, limit: 50 } }),
+    api<DeliveryPricing>(`/cities/${config.city}/delivery-pricing`),
   ]);
   const options = directory.items.map((b) => ({ id: b.id, name: b.name }));
 
@@ -124,6 +125,7 @@ export default async function AdminPage() {
         )}
       </section>
       <section className="grid gap-6 lg:grid-cols-2">
+        <div className="card p-5"><SectionHeader title="تسعير التوصيل حسب المسافة" /><DeliveryPricingForm city={config.city} initial={pricing} /></div>
         <div className="card p-5"><SectionHeader title="تسجيل دفعة اشتراك" /><PaymentForm businesses={options} /></div>
         <div className="flex flex-col gap-6">
           <div className="card p-5"><SectionHeader title="ظهور مميز (إعلان)" /><FeatureForm businesses={options} /></div>

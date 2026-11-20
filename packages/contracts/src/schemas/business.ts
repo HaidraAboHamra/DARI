@@ -45,6 +45,9 @@ export const listBusinessesQuerySchema = cursorQuerySchema.extend({
   vertical: z.enum(VERTICALS).optional(),
   categoryId: idSchema.optional(),
   areaId: idSchema.optional(),
+  /** Customer location, for per-distance delivery fees. */
+  lat: z.coerce.number().min(-90).max(90).optional(),
+  lng: z.coerce.number().min(-180).max(180).optional(),
 });
 export type ListBusinessesQuery = z.infer<typeof listBusinessesQuerySchema>;
 

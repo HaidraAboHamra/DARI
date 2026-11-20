@@ -1,19 +1,20 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { type BusinessDetail, type BusinessStatus, type BusinessSummary, isOpenAt, type MapPoint, type Membership, type Page, type Vertical } from '@dari/contracts';
+import { type BusinessDetail, businessQuote, type BusinessStatus, type BusinessSummary, type GeoPoint, isOpenAt, type MapPoint, type Membership, type Page, type Vertical } from '@dari/contracts';
 import { aliasedTable, and, desc, eq, inArray, isNotNull, lt, or, type SQL, sql } from 'drizzle-orm';
 import { decodeCursor, toPage } from '../../common/pagination/cursor';
 import { DB_READ, type Database, type DbExecutor } from '../../infrastructure/database/database.module';
-import { areas, businesses, businessMembers, categories } from '../../infrastructure/database/schema';
+import { areas, businesses, businessMembers, categories, type CityConfig } from '../../infrastructure/database/schema';
+import { cityPricing } from '../cities/cities.service';
 
 const category = aliasedTable(categories, 'category');
 const area = aliasedTable(areas, 'area');
 
 /**
- * The city's default delivery fee, for businesses without their own. Explicitly
+ * The city's config (delivery pricing), for businesses without their own fee. Explicitly
  * qualified: inside select fields Drizzle renders outer columns unqualified,
  * which a correlated subquery would silently bind to the wrong table.
  */
-export const cityDeliveryFee = sql<number | null>`(select (c.config->>'deliveryBaseFee')::int from cities c where c.id = "businesses"."city_id")`;
+export const cityConfig = sql<CityConfig | null>`(select c.config from cities c where c.id = "businesses"."city_id")`;
 
 export const cityTimezone = sql<string | null>`(select c.timezone from cities c where c.id = "businesses"."city_id")`;
 
@@ -21,7 +22,7 @@ export const summaryColumns = {
   business: businesses,
   categoryName: category.nameAr,
   areaName: area.nameAr,
-  cityDeliveryFee,
+  cityConfig,
   cityTimezone,
 };
 
@@ -29,7 +30,7 @@ export type SummaryRow = {
   business: typeof businesses.$inferSelect;
   categoryName: string | null;
   areaName: string | null;
-  cityDeliveryFee: number | null;
+  cityConfig: CityConfig | null;
   cityTimezone: string | null;
 };
 
@@ -40,6 +41,8 @@ export interface ListFilter {
   areaId?: string | undefined;
   cursor?: string | undefined;
   limit: number;
+  /** Customer location for per-distance delivery fees. */
+  from?: GeoPoint | undefined;
 }
 
 /** Read model for businesses: all joins and row → DTO mapping live here. */
@@ -101,7 +104,7 @@ export class BusinessesRepository {
       .orderBy(desc(featured), desc(businesses.ratingAvg), desc(businesses.id))
       .limit(filter.limit + 1);
 
-    return toPage(rows, filter.limit, toSummary, (r) => [r.featured, r.business.ratingAvg, r.business.id]);
+    return toPage(rows, filter.limit, (r) => toSummary(r, filter.from), (r) => [r.featured, r.business.ratingAvg, r.business.id]);
   }
 
   /** Lightweight points for the city map (no joins, capped). */
@@ -138,8 +141,10 @@ export class BusinessesRepository {
   }
 }
 
-export function toSummary(row: SummaryRow): BusinessSummary {
+export function toSummary(row: SummaryRow, customer?: GeoPoint): BusinessSummary {
   const b = row.business;
+  const pricing = cityPricing(row.cityConfig ?? { deliveryBaseFee: 0, orderingVerticals: [] });
+  const quote = businessQuote({ ownDeliveryFee: b.deliveryFee, location: b.lat !== null && b.lng !== null ? { lat: b.lat, lng: b.lng } : null }, pricing, customer);
   return {
     id: b.id,
     slug: b.slug,
@@ -154,7 +159,9 @@ export function toSummary(row: SummaryRow): BusinessSummary {
     isVerified: b.verifiedAt !== null,
     isFeatured: b.featuredUntil !== null && b.featuredUntil > new Date(),
     acceptsOrders: b.acceptsOrders,
-    deliveryFee: b.deliveryFee ?? row.cityDeliveryFee ?? 0,
+    deliveryFee: quote.fee,
+    distanceKm: quote.distanceKm,
+    deliverable: quote.deliverable,
     prepMinutes: b.prepMinutes,
     minOrder: b.minOrder,
     isOpen: isOpenAt(b.openingHours, new Date(), row.cityTimezone ?? 'Asia/Damascus'),

@@ -41,3 +41,12 @@ export const placeSchema = z.object({
 export type Place = z.infer<typeof placeSchema>;
 
 export const urlSchema = z.url({ protocol: /^https?$/ }).max(500);
+
+/** Admin-set city delivery pricing (see domain/delivery-pricing). */
+export const deliveryPricingSchema = z.object({
+  baseFee: z.number().int().min(0).max(10_000_000),
+  perKm: z.number().int().min(0).max(10_000_000),
+  minFee: z.number().int().min(0).max(10_000_000),
+  maxKm: z.number().min(0.5).max(200),
+  roundTo: z.number().int().min(1).max(100_000),
+});

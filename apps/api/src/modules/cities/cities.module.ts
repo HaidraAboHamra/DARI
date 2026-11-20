@@ -1,11 +1,11 @@
 import { Global, Module } from '@nestjs/common';
 import { CacheService } from '../../infrastructure/redis/cache.service';
-import { CitiesController } from './cities.controller';
+import { CitiesController, CityAdminController } from './cities.controller';
 import { CitiesService } from './cities.service';
 
 @Global()
 @Module({
-  controllers: [CitiesController],
+  controllers: [CitiesController, CityAdminController],
   providers: [CitiesService, CacheService],
   exports: [CitiesService, CacheService],
 })

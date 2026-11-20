@@ -1,3 +1,4 @@
+import type { DeliveryPricing } from '@dari/contracts';
 import { sql } from 'drizzle-orm';
 import { boolean, doublePrecision, index, jsonb, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { createdAt, pk, updatedAt } from './_shared';
@@ -8,6 +9,8 @@ export interface CityConfig {
   deliveryBaseFee: number;
   /** Ordering is enabled per vertical so a city can launch layer by layer. */
   orderingVerticals: string[];
+  /** Distance-based delivery pricing set by admins; absent = derived from deliveryBaseFee. */
+  deliveryPricing?: DeliveryPricing;
 }
 
 /** City is a dimension, not a hard-coded product (blueprint §13.1). */

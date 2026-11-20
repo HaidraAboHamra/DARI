@@ -13,3 +13,4 @@ export * from './types-v2';
 export * from './domain/booking-lifecycle';
 export * from './domain/product-options';
 export * from './domain/cart';
+export * from './domain/delivery-pricing';
