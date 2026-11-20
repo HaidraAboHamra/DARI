@@ -1,7 +1,7 @@
 import { IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_700Bold } from '@expo-google-fonts/ibm-plex-sans-arabic';
 import { ReemKufi_700Bold, useFonts } from '@expo-google-fonts/reem-kufi';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { SplashScreen, Stack } from 'expo-router';
+import { router, SplashScreen, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { I18nManager, Platform } from 'react-native';
@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { CartProvider } from '@/lib/cart';
 import { queryClient } from '@/lib/query';
+import { isServerConfigured } from '@/lib/server';
 import { colors, fonts } from '@/theme';
 
 // Arabic-first app: right-to-left layout everywhere (native also set in app.json).
@@ -26,7 +27,10 @@ function Navigator() {
   const [fontsLoaded] = useFonts({ ReemKufi_700Bold, IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_700Bold });
 
   useEffect(() => {
-    if (ready && fontsLoaded) void SplashScreen.hideAsync();
+    if (!ready || !fontsLoaded) return;
+    void SplashScreen.hideAsync();
+    // First launch of a test build: ask which server to use before anything else.
+    if (!isServerConfigured()) setTimeout(() => router.push('/login'), 0);
   }, [ready, fontsLoaded]);
   if (!ready || !fontsLoaded) return null;
 

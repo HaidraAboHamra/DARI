@@ -29,9 +29,19 @@ interface Options {
  * (single-flight) and a single retry, so parallel requests never race to rotate.
  */
 export class ApiClient {
+  private baseUrl: string = config.apiUrl;
   private accessToken: string | null = null;
   private refreshing: Promise<boolean> | null = null;
   private onSessionChange: ((tokens: AuthTokens | null) => void) | null = null;
+
+  /** Test builds can point the app at another server (see `server.ts`). */
+  setBaseUrl(url: string): void {
+    this.baseUrl = url.replace(/\/+$/, '');
+  }
+
+  get serverUrl(): string {
+    return this.baseUrl;
+  }
 
   listen(callback: (tokens: AuthTokens | null) => void): void {
     this.onSessionChange = callback;
@@ -55,7 +65,7 @@ export class ApiClient {
   }
 
   async request<T>(path: string, options: Options = {}, retried = false): Promise<T> {
-    const url = new URL(`${config.apiUrl}${path}`);
+    const url = new URL(`${this.baseUrl}${path}`);
     for (const [k, v] of Object.entries(options.query ?? {})) {
       if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
     }
@@ -93,7 +103,7 @@ export class ApiClient {
       try {
         const refreshToken = await secureStorage.get(REFRESH_KEY);
         if (!refreshToken) return false;
-        const res = await fetch(`${config.apiUrl}/auth/refresh`, {
+        const res = await fetch(`${this.baseUrl}/auth/refresh`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ refreshToken }),

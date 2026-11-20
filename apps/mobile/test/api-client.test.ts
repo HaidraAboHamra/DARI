@@ -75,3 +75,13 @@ describe('mobile ApiClient', () => {
     expect(fetchMock.mock.calls[0]![0]).toBe('https://api.test/v1/businesses?city=salamiyah&vertical=food');
   });
 });
+
+describe('server address (test builds)', () => {
+  it('normalizes what testers type', async () => {
+    vi.doMock('@react-native-async-storage/async-storage', () => ({ default: { getItem: async () => null, setItem: async () => undefined } }));
+    const { normalizeServerUrl } = await import('../src/lib/server');
+    expect(normalizeServerUrl('192.168.1.20:4000')).toBe('http://192.168.1.20:4000/api/v1');
+    expect(normalizeServerUrl('https://api.dari.sy/')).toBe('https://api.dari.sy/api/v1');
+    expect(normalizeServerUrl('https://api.dari.sy/api/v1')).toBe('https://api.dari.sy/api/v1');
+  });
+});
