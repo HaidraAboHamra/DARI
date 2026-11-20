@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  type CityOffer,
   type Connection,
   type Coupon,
   couponDiscount,
@@ -8,6 +9,7 @@ import {
   createCouponSchema,
   type Favorite,
   type FavoriteInput,
+  type Vertical,
 } from '@dari/contracts';
 import { and, desc, eq, gt, inArray, isNotNull, isNull, lte, or, sql } from 'drizzle-orm';
 import type { AuthUser } from '../../common/auth/auth-user';
@@ -22,6 +24,7 @@ import {
   favorites,
   propertyListings,
 } from '../../infrastructure/database/schema';
+import { CitiesService } from '../cities/cities.service';
 import { BusinessAccessService } from '../directory/business-access.service';
 import { BusinessesRepository } from '../directory/businesses.repository';
 import { BusinessesService } from '../directory/businesses.service';
@@ -44,6 +47,7 @@ export class MarketingService {
     private readonly access: BusinessAccessService,
     private readonly plans: PlansService,
     private readonly outbox: OutboxService,
+    private readonly cities: CitiesService,
   ) {}
 
   // ── Customer Connect ─────────────────────────────────────────────────────
@@ -131,6 +135,26 @@ export class MarketingService {
   async setCouponActive(user: AuthUser, businessId: string, couponId: string, isActive: boolean): Promise<void> {
     await this.access.require(user, businessId, 'marketing.write');
     await this.db.update(coupons).set({ isActive }).where(and(eq(coupons.id, couponId), eq(coupons.businessId, businessId)));
+  }
+
+  /** Public offers across a city's active businesses (offer banners), newest first. */
+  async cityOffers(citySlug: string, vertical: Vertical | undefined, limit: number): Promise<CityOffer[]> {
+    const city = await this.cities.getBySlug(citySlug);
+    const conditions = [eq(businesses.cityId, city.id), eq(businesses.status, 'active'), eq(coupons.isPublic, true), ...activeCouponConditions()];
+    if (vertical) conditions.push(eq(businesses.vertical, vertical));
+    const rows = await this.db
+      .select({ coupon: coupons })
+      .from(coupons)
+      .innerJoin(businesses, eq(businesses.id, coupons.businessId))
+      .where(and(...conditions))
+      .orderBy(desc(coupons.id))
+      .limit(limit * 2);
+    const usable = rows.map((r) => r.coupon).filter((c) => c.maxUses === null || c.usedCount < c.maxUses);
+    const summaries = await this.repo.findSummariesByIds([...new Set(usable.map((c) => c.businessId))]);
+    return usable.slice(0, limit).flatMap((c) => {
+      const business = summaries.get(c.businessId);
+      return business ? [{ coupon: toCoupon(c), business }] : [];
+    });
   }
 
   /** Public offers shown on the business page. */

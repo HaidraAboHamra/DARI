@@ -13,7 +13,13 @@ export function SettingsForm({ business }: { business: BusinessDetail }) {
     <form action={action} className="card grid gap-4 p-6 sm:grid-cols-2">
       <Field label="الهاتف"><Input name="phone" type="tel" dir="ltr" defaultValue={business.phone ?? ''} /></Field>
       <Field label="رسم توصيل خاص (اتركه فارغاً لاعتماد رسم المدينة)">
-        <Input name="deliveryFee" inputMode="numeric" defaultValue={business.deliveryFee ?? ''} />
+        <Input name="deliveryFee" inputMode="numeric" defaultValue={business.ownDeliveryFee ?? ''} />
+      </Field>
+      <Field label="مدة التحضير (دقيقة) — تظهر للزبون كوقت التوصيل">
+        <Input name="prepMinutes" inputMode="numeric" defaultValue={business.prepMinutes} />
+      </Field>
+      <Field label="الحد الأدنى للطلب (0 = بدون)">
+        <Input name="minOrder" inputMode="numeric" defaultValue={business.minOrder} />
       </Field>
       <div className="sm:col-span-2"><Field label="العنوان"><Input name="address" defaultValue={business.address ?? ''} /></Field></div>
       <div className="sm:col-span-2"><Field label="الوصف"><Textarea name="description" defaultValue={business.description ?? ''} /></Field></div>

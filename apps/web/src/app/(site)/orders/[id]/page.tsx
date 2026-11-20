@@ -1,3 +1,4 @@
+import { itemSummary } from '@dari/contracts/i18n';
 import { nextOrderStatuses, type Order, type OrderStatus, type Product } from '@dari/contracts';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
@@ -50,9 +51,12 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
       </section>
 
       <section className="card divide-y divide-sand/70">
-        {order.items.map((i) => (
-          <div key={i.productId} className="flex justify-between p-4 text-sm">
-            <span>{i.quantity} × {i.name}</span>
+        {order.items.map((i, index) => (
+          <div key={index} className="flex justify-between gap-3 p-4 text-sm">
+            <span>
+              {itemSummary(i)}
+              {i.note && <span className="block text-gold-deep">«{i.note}»</span>}
+            </span>
             <span className="font-semibold">{money(i.lineTotal, order.currency)}</span>
           </div>
         ))}

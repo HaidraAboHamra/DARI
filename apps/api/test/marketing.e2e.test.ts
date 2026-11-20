@@ -16,7 +16,10 @@ describe('marketing, plans & admin (e2e)', () => {
     h = await createHarness();
     [citizen, merchant, admin] = await Promise.all([loginAs(h.app, 'citizen'), loginAs(h.app, 'merchant'), loginAs(h.app, 'admin')]);
     restaurant = await businessByName(h.app, 'مطعم الشام');
-    menu = (await h.app.inject({ method: 'GET', url: `/api/v1/businesses/${restaurant.id}/products` })).json();
+    // Items without required options, so tests can order them with a plain quantity.
+    menu = (await h.app.inject({ method: 'GET', url: `/api/v1/businesses/${restaurant.id}/products` }))
+      .json<Product[]>()
+      .filter((p) => p.options.every((g) => g.min === 0));
   });
   afterAll(() => h.close());
 

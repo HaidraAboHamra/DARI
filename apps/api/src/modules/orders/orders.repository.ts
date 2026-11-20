@@ -82,6 +82,8 @@ export class OrdersRepository {
         unitPrice: i.unitPrice,
         quantity: i.quantity,
         lineTotal: i.unitPrice * i.quantity,
+        options: i.options,
+        note: i.note,
       })),
       subtotal: o.subtotal,
       deliveryFee: o.deliveryFee,

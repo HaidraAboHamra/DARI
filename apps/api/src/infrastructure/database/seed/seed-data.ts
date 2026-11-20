@@ -72,13 +72,7 @@ export const BUSINESSES: SeedBusiness[] = [
     hours: DAILY('10:00', '23:30'),
     acceptsOrders: true,
     rating: 4.8,
-    products: [
-      { name: 'فتة حمص', price: 18000, section: 'مقبلات' },
-      { name: 'حمص بطحينة', price: 12000, section: 'مقبلات' },
-      { name: 'شيش طاووق', price: 45000, section: 'مشاوي' },
-      { name: 'كباب حلبي', price: 52000, section: 'مشاوي' },
-      { name: 'فروج مشوي', price: 75000, section: 'مشاوي' },
-    ],
+    // Menu, photos and options: seed-food.ts
   },
   {
     name: 'مطعم بيتزا إيطاليا',
@@ -89,13 +83,7 @@ export const BUSINESSES: SeedBusiness[] = [
     hours: DAILY('12:00', '01:00'),
     acceptsOrders: true,
     rating: 4.6,
-    products: [
-      { name: 'بيتزا مارغريتا', price: 32000, section: 'بيتزا', description: 'صلصة طماطم، موزاريلا، ريحان' },
-      { name: 'بيتزا خضار', price: 35000, section: 'بيتزا' },
-      { name: 'بيتزا دجاج باربكيو', price: 42000, section: 'بيتزا' },
-      { name: 'بيتزا لحمة', price: 45000, section: 'بيتزا' },
-      { name: 'كولا', price: 6000, section: 'مشروبات', stock: 120 },
-    ],
+    // Menu, photos and options: seed-food.ts
   },
   {
     name: 'شاورما الأصيل',
@@ -106,12 +94,7 @@ export const BUSINESSES: SeedBusiness[] = [
     hours: DAILY('11:00', '02:00'),
     acceptsOrders: true,
     rating: 4.5,
-    products: [
-      { name: 'سندويش شاورما دجاج', price: 15000, section: 'سندويش' },
-      { name: 'وجبة شاورما عربي', price: 32000, section: 'وجبات' },
-      { name: 'بروستد 4 قطع', price: 48000, section: 'وجبات' },
-      { name: 'سندويش فلافل', price: 7000, section: 'سندويش' },
-    ],
+    // Menu, photos and options: seed-food.ts
   },
   {
     name: 'حلويات ورد الشام',
@@ -122,11 +105,7 @@ export const BUSINESSES: SeedBusiness[] = [
     hours: DAILY('08:00', '23:00'),
     acceptsOrders: true,
     rating: 4.7,
-    products: [
-      { name: 'كنافة نابلسية - كغ', price: 90000, section: 'حلويات' },
-      { name: 'معمول تمر - كغ', price: 70000, section: 'حلويات' },
-      { name: 'بلورية - كغ', price: 110000, section: 'حلويات' },
-    ],
+    // Menu, photos and options: seed-food.ts
   },
   {
     name: 'كافيه السرايا',

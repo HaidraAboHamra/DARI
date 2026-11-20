@@ -1,11 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { CreateProductInput, Product, UpdateProductInput } from '@dari/contracts';
-import { createProductSchema } from '@dari/contracts';
-import { and, asc, eq, isNull, sql } from 'drizzle-orm';
+import { createProductSchema, updateProductSchema } from '@dari/contracts';
+import { and, asc, desc, eq, gte, isNull, notInArray, sql } from 'drizzle-orm';
 import type { AuthUser } from '../../common/auth/auth-user';
 import { ConflictError, NotFoundError } from '../../common/errors/app-error';
 import { DB, DB_READ, type Database } from '../../infrastructure/database/database.module';
-import { products } from '../../infrastructure/database/schema';
+import { orderItems, orders, products } from '../../infrastructure/database/schema';
 import { CacheService } from '../../infrastructure/redis/cache.service';
 import { BusinessAccessService } from '../directory/business-access.service';
 import { BusinessesService } from '../directory/businesses.service';
@@ -14,6 +14,9 @@ import { buildSearchText } from '../directory/search-text';
 
 type ProductRow = typeof products.$inferSelect;
 const MENU_TTL = 60;
+/** «الأكثر طلباً»: the top sellers of the last 30 days (plus merchant-pinned items). */
+const POPULAR_COUNT = 3;
+const POPULAR_WINDOW_DAYS = 30;
 
 /** Merchant catalog: products, menus, services with prices (blueprint §7.1). */
 @Injectable()
@@ -36,8 +39,23 @@ export class CatalogService {
         .from(products)
         .where(and(eq(products.businessId, businessId), isNull(products.deletedAt), eq(products.isAvailable, true)))
         .orderBy(asc(products.section), asc(products.sortOrder), asc(products.name));
-      return rows.map(toProduct);
+      const popular = await this.topSellers(businessId);
+      return rows.map((r) => toProduct(r, popular.has(r.id)));
     });
+  }
+
+  /** Product ids ordered the most recently (by quantity, excluding cancelled orders). */
+  private async topSellers(businessId: string): Promise<Set<string>> {
+    const since = new Date(Date.now() - POPULAR_WINDOW_DAYS * 86_400_000);
+    const rows = await this.read
+      .select({ productId: orderItems.productId, qty: sql<number>`sum(${orderItems.quantity})`.mapWith(Number) })
+      .from(orderItems)
+      .innerJoin(orders, eq(orders.id, orderItems.orderId))
+      .where(and(eq(orders.businessId, businessId), gte(orders.createdAt, since), notInArray(orders.status, ['cancelled', 'rejected'])))
+      .groupBy(orderItems.productId)
+      .orderBy(desc(sql`sum(${orderItems.quantity})`))
+      .limit(POPULAR_COUNT);
+    return new Set(rows.filter((r) => r.qty >= 2).map((r) => r.productId));
   }
 
   async listForMerchant(user: AuthUser, businessId: string): Promise<Product[]> {
@@ -47,7 +65,7 @@ export class CatalogService {
       .from(products)
       .where(and(eq(products.businessId, businessId), isNull(products.deletedAt)))
       .orderBy(asc(products.section), asc(products.sortOrder), asc(products.name));
-    return rows.map(toProduct);
+    return rows.map((r) => toProduct(r));
   }
 
   async create(user: AuthUser, businessId: string, input: CreateProductInput): Promise<Product> {
@@ -93,10 +111,11 @@ export class CatalogService {
   async update(user: AuthUser, businessId: string, productId: string, input: UpdateProductInput): Promise<Product> {
     await this.access.require(user, businessId, 'catalog.write');
     const current = await this.findOwned(businessId, productId);
-    const next = { ...current, ...input };
+    const changes = updateProductSchema.parse(input);
+    const next = { ...current, ...changes };
     const [row] = await this.db
       .update(products)
-      .set({ ...input, searchText: buildSearchText(next.name, next.section, next.description) })
+      .set({ ...changes, searchText: buildSearchText(next.name, next.section, next.description) })
       .where(eq(products.id, productId))
       .returning();
     await this.cache.invalidate(this.menuKey(businessId));
@@ -130,7 +149,7 @@ export class CatalogService {
   }
 }
 
-export function toProduct(row: ProductRow): Product {
+export function toProduct(row: ProductRow, topSeller = false): Product {
   return {
     id: row.id,
     businessId: row.businessId,
@@ -142,5 +161,8 @@ export function toProduct(row: ProductRow): Product {
     isAvailable: row.isAvailable,
     stock: row.stock,
     sortOrder: row.sortOrder,
+    options: row.options,
+    isFeatured: row.isFeatured,
+    isPopular: row.isFeatured || topSeller,
   };
 }

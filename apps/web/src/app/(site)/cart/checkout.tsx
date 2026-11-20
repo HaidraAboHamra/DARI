@@ -1,6 +1,6 @@
 'use client';
 
-import type { FulfillmentType } from '@dari/contracts';
+import { cartItems, type FulfillmentType } from '@dari/contracts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
@@ -43,7 +43,7 @@ export function Checkout() {
         {
           businessId: cart.businessId,
           fulfillment,
-          items: cart.lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+          items: cartItems(cart),
           ...(fulfillment === 'delivery' && { address: { text: address.trim() } }),
           ...(notes.trim() && { notes: notes.trim() }),
           ...(coupon && { couponCode: coupon.code }),
@@ -70,15 +70,17 @@ export function Checkout() {
           </button>
         </div>
         {cart.lines.map((line) => (
-          <div key={line.productId} className="flex items-center gap-3 p-4">
+          <div key={line.key} className="flex items-center gap-3 p-4">
             <div className="min-w-0 flex-1">
               <p className="font-semibold text-navy">{line.name}</p>
+              {line.optionsLabel && <p className="text-sm text-navy/80">{line.optionsLabel}</p>}
+              {line.note && <p className="text-sm text-gold-deep">«{line.note}»</p>}
               <p className="text-sm text-muted">{money(line.price)}</p>
             </div>
             <div className="flex items-center gap-2" role="group" aria-label={`كمية ${line.name}`}>
-              <button type="button" className="h-9 w-9 rounded-full border border-sand text-lg" onClick={() => setQuantity(line.productId, line.quantity - 1)} aria-label="إنقاص">−</button>
+              <button type="button" className="h-9 w-9 rounded-full border border-sand text-lg" onClick={() => setQuantity(line.key, line.quantity - 1)} aria-label="إنقاص">−</button>
               <span className="w-6 text-center font-semibold tabular-nums">{line.quantity}</span>
-              <button type="button" className="h-9 w-9 rounded-full bg-gold text-lg text-navy" onClick={() => setQuantity(line.productId, line.quantity + 1)} aria-label="زيادة">+</button>
+              <button type="button" className="h-9 w-9 rounded-full bg-gold text-lg text-navy" onClick={() => setQuantity(line.key, line.quantity + 1)} aria-label="زيادة">+</button>
             </div>
           </div>
         ))}

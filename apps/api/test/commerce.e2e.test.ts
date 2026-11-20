@@ -2,6 +2,8 @@ import type { BusinessSummary, Order, Page, Product } from '@dari/contracts';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { users } from '../src/infrastructure/database/schema';
+import { BUSINESSES } from '../src/infrastructure/database/seed/seed-data';
+import { FOOD_PLACES } from '../src/infrastructure/database/seed/seed-food';
 import { auth, createHarness, type Harness, login, loginAs } from './helpers/harness';
 import { outboxRelay } from './helpers/worker';
 
@@ -27,7 +29,10 @@ describe('commerce (e2e)', () => {
     const items = list.json<Page<BusinessSummary>>().items;
     restaurant = items.find((b) => b.name === 'مطعم الشام')!;
     pizzeria = items.find((b) => b.name === 'مطعم بيتزا إيطاليا')!;
-    menu = (await h.app.inject({ method: 'GET', url: `/api/v1/businesses/${restaurant.id}/products` })).json();
+    // Items without required options, so tests can order them with a plain quantity.
+    menu = (await h.app.inject({ method: 'GET', url: `/api/v1/businesses/${restaurant.id}/products` }))
+      .json<Product[]>()
+      .filter((p) => p.options.every((g) => g.min === 0));
   });
   afterAll(() => h.close());
 
@@ -54,7 +59,8 @@ describe('commerce (e2e)', () => {
       });
       cursor = page.nextCursor;
     } while (cursor);
-    expect(seen.size).toBe(20);
+    const seeded = new Set([...BUSINESSES.map((b) => b.name), ...FOOD_PLACES.map((p) => p.name)]);
+    expect(seen.size).toBe(seeded.size);
   });
 
   it('runs a delivery order end to end: merchant, courier, CRM, notifications', async () => {

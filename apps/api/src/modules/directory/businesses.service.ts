@@ -110,6 +110,8 @@ export class BusinessesService {
           openingHours: input.openingHours ?? [],
           acceptsOrders: input.acceptsOrders ?? false,
           deliveryFee: input.deliveryFee ?? null,
+          ...(input.prepMinutes !== undefined && { prepMinutes: input.prepMinutes }),
+          ...(input.minOrder !== undefined && { minOrder: input.minOrder }),
           logoUrl: input.logoUrl ?? null,
           coverUrl: input.coverUrl ?? null,
           status: 'pending_review',

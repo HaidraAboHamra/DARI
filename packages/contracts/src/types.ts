@@ -81,6 +81,14 @@ export interface BusinessSummary {
   isVerified: boolean;
   isFeatured: boolean;
   acceptsOrders: boolean;
+  /** Effective delivery fee (business-specific or the city default). */
+  deliveryFee: number;
+  /** Typical preparation time in minutes; ETA ≈ prep + local delivery. */
+  prepMinutes: number;
+  /** Minimum order subtotal; 0 = none. */
+  minOrder: number;
+  /** Open right now by its weekly hours (city time zone). */
+  isOpen: boolean;
 }
 
 export interface BusinessDetail extends BusinessSummary {
@@ -92,8 +100,8 @@ export interface BusinessDetail extends BusinessSummary {
   address: string | null;
   location: GeoPoint | null;
   openingHours: OpeningHours;
-  /** Business-specific delivery fee; null means the city default applies. */
-  deliveryFee: number | null;
+  /** Business-specific delivery fee override; null means the city default applies. */
+  ownDeliveryFee: number | null;
   status: BusinessStatus;
   createdAt: string;
 }
@@ -114,14 +122,43 @@ export interface Product {
   isAvailable: boolean;
   stock: number | null;
   sortOrder: number;
+  options: ProductOptionGroup[];
+  isFeatured: boolean;
+  /** Pinned by the merchant or among the most ordered recently. */
+  isPopular: boolean;
+}
+
+export interface ProductOptionChoice {
+  id: string;
+  name: string;
+  /** Added to the product price. */
+  price: number;
+}
+
+export interface ProductOptionGroup {
+  id: string;
+  name: string;
+  min: number;
+  max: number;
+  choices: ProductOptionChoice[];
+}
+
+/** Snapshot of a chosen option on an order line. */
+export interface OrderItemOption {
+  group: string;
+  choice: string;
+  price: number;
 }
 
 export interface OrderItem {
   productId: string;
   name: string;
+  /** Product price plus chosen options. */
   unitPrice: number;
   quantity: number;
   lineTotal: number;
+  options: OrderItemOption[];
+  note: string | null;
 }
 
 export interface Order {

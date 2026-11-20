@@ -6,7 +6,7 @@ import { DB_READ, type Database } from '../../infrastructure/database/database.m
 import { areas, articles, businesses, categories, cityEvents, jobs, products, propertyListings, users } from '../../infrastructure/database/schema';
 import { toListing } from '../property/property.service';
 import { toEvent } from '../events/events.service';
-import { toSummary } from '../directory/businesses.repository';
+import { cityDeliveryFee, cityTimezone, toSummary } from '../directory/businesses.repository';
 
 import { toProduct } from '../catalog/catalog.service';
 import { openJobConditions, toJob } from '../jobs/jobs.service';
@@ -58,7 +58,7 @@ export class PostgresSearchEngine extends SearchEngine {
     if (req.categoryIds.length) conditions.push(inArray(businesses.categoryId, req.categoryIds));
 
     const rows = await this.db
-      .select({ business: businesses, categoryName: category.nameAr, areaName: area.nameAr, score: text?.score ?? sql<number>`0.5` })
+      .select({ business: businesses, categoryName: category.nameAr, areaName: area.nameAr, cityDeliveryFee, cityTimezone, score: text?.score ?? sql<number>`0.5` })
       .from(businesses)
       .leftJoin(category, eq(category.id, businesses.categoryId))
       .leftJoin(area, eq(area.id, businesses.areaId))

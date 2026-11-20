@@ -130,3 +130,9 @@ const eventDate = new Intl.DateTimeFormat('ar-SY', { weekday: 'long', day: 'nume
 export function eventWhen(iso: string): string {
   return eventDate.format(new Date(iso));
 }
+
+/** «2 × بيتزا مارغريتا (كبير · جبنة إضافية)» — what the kitchen and the customer see per line. */
+export function itemSummary(item: { quantity: number; name: string; options?: readonly { choice: string }[] }): string {
+  const choices = item.options?.map((o) => o.choice).join(' · ');
+  return `${item.quantity} × ${item.name}${choices ? ` (${choices})` : ''}`;
+}

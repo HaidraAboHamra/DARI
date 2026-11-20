@@ -29,6 +29,9 @@ export const createBusinessSchema = z.object({
   openingHours: openingHoursSchema.optional(),
   acceptsOrders: z.boolean().optional(),
   deliveryFee: z.number().int().nonnegative().max(10_000_000).nullable().optional(),
+  /** Typical preparation time (minutes) shown to customers as the ETA. */
+  prepMinutes: z.number().int().min(5).max(240).optional(),
+  minOrder: z.number().int().nonnegative().max(100_000_000).optional(),
   coverUrl: urlSchema.optional(),
   logoUrl: urlSchema.optional(),
 });

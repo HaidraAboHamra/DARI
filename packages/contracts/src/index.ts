@@ -11,3 +11,5 @@ export * from './domain/time-zone';
 export * from './domain/availability';
 export * from './types-v2';
 export * from './domain/booking-lifecycle';
+export * from './domain/product-options';
+export * from './domain/cart';

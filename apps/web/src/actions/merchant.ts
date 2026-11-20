@@ -48,6 +48,8 @@ export async function updateBusinessSettings(businessId: string, _: ActionState,
         logoUrl: str(form, 'logoUrl'),
         coverUrl: str(form, 'coverUrl'),
         deliveryFee: int(form, 'deliveryFee') ?? null,
+        prepMinutes: int(form, 'prepMinutes'),
+        minOrder: int(form, 'minOrder') ?? 0,
       },
     });
     revalidatePath(`/merchant/${businessId}`);

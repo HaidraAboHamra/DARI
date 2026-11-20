@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { BusinessDetail, BusinessStatus, BusinessSummary, MapPoint, Membership, Page, Vertical } from '@dari/contracts';
+import { type BusinessDetail, type BusinessStatus, type BusinessSummary, isOpenAt, type MapPoint, type Membership, type Page, type Vertical } from '@dari/contracts';
 import { aliasedTable, and, desc, eq, inArray, isNotNull, lt, or, type SQL, sql } from 'drizzle-orm';
 import { decodeCursor, toPage } from '../../common/pagination/cursor';
 import { DB_READ, type Database, type DbExecutor } from '../../infrastructure/database/database.module';
@@ -8,16 +8,29 @@ import { areas, businesses, businessMembers, categories } from '../../infrastruc
 const category = aliasedTable(categories, 'category');
 const area = aliasedTable(areas, 'area');
 
-const summaryColumns = {
+/**
+ * The city's default delivery fee, for businesses without their own. Explicitly
+ * qualified: inside select fields Drizzle renders outer columns unqualified,
+ * which a correlated subquery would silently bind to the wrong table.
+ */
+export const cityDeliveryFee = sql<number | null>`(select (c.config->>'deliveryBaseFee')::int from cities c where c.id = "businesses"."city_id")`;
+
+export const cityTimezone = sql<string | null>`(select c.timezone from cities c where c.id = "businesses"."city_id")`;
+
+export const summaryColumns = {
   business: businesses,
   categoryName: category.nameAr,
   areaName: area.nameAr,
+  cityDeliveryFee,
+  cityTimezone,
 };
 
-type SummaryRow = {
+export type SummaryRow = {
   business: typeof businesses.$inferSelect;
   categoryName: string | null;
   areaName: string | null;
+  cityDeliveryFee: number | null;
+  cityTimezone: string | null;
 };
 
 export interface ListFilter {
@@ -141,6 +154,10 @@ export function toSummary(row: SummaryRow): BusinessSummary {
     isVerified: b.verifiedAt !== null,
     isFeatured: b.featuredUntil !== null && b.featuredUntil > new Date(),
     acceptsOrders: b.acceptsOrders,
+    deliveryFee: b.deliveryFee ?? row.cityDeliveryFee ?? 0,
+    prepMinutes: b.prepMinutes,
+    minOrder: b.minOrder,
+    isOpen: isOpenAt(b.openingHours, new Date(), row.cityTimezone ?? 'Asia/Damascus'),
   };
 }
 
@@ -156,7 +173,7 @@ function toDetail(row: SummaryRow): BusinessDetail {
     address: b.address,
     location: b.lat !== null && b.lng !== null ? { lat: b.lat, lng: b.lng } : null,
     openingHours: b.openingHours,
-    deliveryFee: b.deliveryFee,
+    ownDeliveryFee: b.deliveryFee,
     status: b.status,
     createdAt: b.createdAt.toISOString(),
   };

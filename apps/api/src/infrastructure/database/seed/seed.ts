@@ -6,6 +6,9 @@ import { createDatabase, createPool, type Database } from '../database.module';
 import * as s from '../schema';
 import { AREAS, ARTICLES, BUSINESSES, CATEGORIES, JOBS, SALAMIYAH } from './seed-data';
 import { EVENTS, LISTINGS, RESOURCES } from './seed-extras';
+import { applyFoodUpgrade } from './seed-food-apply';
+import { createObjectStorage } from '../../storage/create-storage';
+import type { ObjectStorage } from '../../storage/object-storage';
 
 /** Demo accounts (log in with the dev OTP code). */
 export const SEED_USERS = {
@@ -16,11 +19,13 @@ export const SEED_USERS = {
   citizen: { phone: '+963900000005', name: 'أحمد محمد', role: 'citizen' as const },
 };
 
-export async function seed(db: Database): Promise<{ skipped: boolean }> {
+/** Demo data. `storage` publishes demo photos (omitted in tests: menus without images). */
+export async function seed(db: Database, storage?: ObjectStorage): Promise<{ skipped: boolean }> {
   const [existing] = await db.select().from(s.cities).where(eq(s.cities.slug, SALAMIYAH.slug));
   if (existing) {
     const extras = await seedExtras(db);
-    return { skipped: !extras };
+    const food = await applyFoodUpgrade(db, SEED_USERS.admin.phone, storage);
+    return { skipped: !extras && !food };
   }
 
   await db.transaction(async (tx) => {
@@ -116,6 +121,7 @@ export async function seed(db: Database): Promise<{ skipped: boolean }> {
     );
   });
   await seedExtras(db);
+  await applyFoodUpgrade(db, SEED_USERS.admin.phone, storage);
   return { skipped: false };
 }
 
@@ -174,7 +180,7 @@ export async function seedExtras(db: Database): Promise<boolean> {
 if (require.main === module) {
   const env = loadEnv();
   const pool = createPool(env.DATABASE_URL, 2);
-  seed(createDatabase(pool))
+  seed(createDatabase(pool), createObjectStorage(env))
     .then((r) => console.log(r.skipped ? '• seed skipped (city already exists)' : '✓ demo data seeded'))
     .catch((err: unknown) => {
       console.error(err);

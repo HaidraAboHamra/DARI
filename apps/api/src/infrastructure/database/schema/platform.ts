@@ -114,3 +114,9 @@ export const deviceTokens = pgTable(
   },
   (t) => [index().on(t.userId)],
 );
+
+/** One-off demo-content upgrades already applied (keeps re-seeding idempotent). */
+export const seedVersions = pgTable('seed_versions', {
+  name: text().primaryKey(),
+  appliedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});

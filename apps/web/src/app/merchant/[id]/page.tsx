@@ -1,3 +1,4 @@
+import { itemSummary } from '@dari/contracts/i18n';
 import { type BusinessDetail, nextOrderStatuses, type Order, type Page, type SmartInsight, TERMINAL_ORDER_STATUSES } from '@dari/contracts';
 import { OrderActions } from '@/components/orders/order-actions';
 import { Badge, EmptyState, SectionHeader, Stat } from '@/components/ui/primitives';
@@ -70,7 +71,7 @@ export default async function MerchantDashboard({ params }: { params: Promise<{ 
                   {o.customerName ?? 'زبون'} · {o.fulfillment === 'delivery' ? `توصيل: ${o.address?.text ?? ''}` : 'استلام من المحل'} · {timeAgo(o.createdAt)}
                 </p>
                 <ul className="text-sm">
-                  {o.items.map((i) => <li key={i.productId}>{i.quantity} × {i.name}</li>)}
+                  {o.items.map((i, index) => <li key={index}>{itemSummary(i)}{i.note && <span className="text-gold-deep"> — «{i.note}»</span>}</li>)}
                 </ul>
                 {o.notes && <p className="rounded-xl bg-champagne/30 px-3 py-2 text-sm">📝 {o.notes}</p>}
                 <div className="flex items-center justify-between gap-3">

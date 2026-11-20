@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import {
+  type CityOffer,
   type Connection,
   type Coupon,
   type CreateBroadcastInput,
@@ -10,6 +11,7 @@ import {
   type FavoriteInput,
   favoriteSchema,
   validateCouponSchema,
+  VERTICALS,
 } from '@dari/contracts';
 import { z } from 'zod';
 import type { AuthUser } from '../../common/auth/auth-user';
@@ -17,11 +19,18 @@ import { CurrentUser, Public } from '../../common/auth/decorators';
 import { zod } from '../../common/validation/zod.pipe';
 import { MarketingService } from './marketing.service';
 
+const cityOffersQuery = z.object({
+  city: z.string().trim().min(2).max(60),
+  vertical: z.enum(VERTICALS).optional(),
+  limit: z.coerce.number().int().min(1).max(20).default(10),
+});
+
 const activeBody = z.object({ isActive: z.boolean() });
 
 @Controller({ version: '1' })
 export class MarketingController {
   constructor(private readonly marketing: MarketingService) {}
+
 
   @Post('businesses/:id/connect')
   @HttpCode(204)
@@ -38,6 +47,13 @@ export class MarketingController {
   @Get('me/connections')
   connections(@CurrentUser() user: AuthUser): Promise<Connection[]> {
     return this.marketing.connections(user);
+  }
+
+  /** City-wide offer banners (e.g. the food home). */
+  @Public()
+  @Get('offers')
+  cityOffers(@Query(zod(cityOffersQuery)) q: z.infer<typeof cityOffersQuery>): Promise<CityOffer[]> {
+    return this.marketing.cityOffers(q.city, q.vertical, q.limit);
   }
 
   @Public()

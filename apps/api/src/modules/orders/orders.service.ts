@@ -6,10 +6,13 @@ import {
   type Order,
   type OrderActor,
   type OrderStatus,
+  optionErrorMessage,
   type Page,
+  priceLine,
   type UpdateOrderStatusInput,
   VERTICAL_META,
 } from '@dari/contracts';
+import { money } from '@dari/contracts/i18n';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { AuthUser } from '../../common/auth/auth-user';
 import { ConflictError, ForbiddenError, NotFoundError } from '../../common/errors/app-error';
@@ -76,17 +79,28 @@ export class OrdersService {
           .where(and(inArray(products.id, productIds), eq(products.businessId, business.id), isNull(products.deletedAt)));
         const byId = new Map(rows.map((p) => [p.id, p]));
 
-        let subtotal = 0;
-        for (const item of input.items) {
+        // Price every line from the current catalog (options included); never trust client prices.
+        const lines = input.items.map((item) => {
           const product = byId.get(item.productId);
           if (!product || !product.isAvailable) {
             throw new ConflictError('أحد المنتجات لم يعد متوفراً', 'PRODUCT_UNAVAILABLE', { productId: item.productId });
           }
-          await this.reserveStock(tx, item.productId, item.quantity);
-          subtotal += product.price * item.quantity;
+          const priced = priceLine(product.price, product.options, item.choices);
+          if (!priced.ok) {
+            throw new ConflictError(`${product.name}: ${optionErrorMessage(priced.error)}`, 'INVALID_OPTIONS', { productId: product.id });
+          }
+          return { item, product, unitPrice: priced.unitPrice, options: priced.options };
+        });
+        const subtotal = lines.reduce((sum, l) => sum + l.unitPrice * l.item.quantity, 0);
+        if (subtotal < business.minOrder) {
+          throw new ConflictError(`الحد الأدنى للطلب من ${business.name} هو ${money(business.minOrder, city.currency)}`, 'BELOW_MIN_ORDER', { minOrder: business.minOrder });
         }
+        // Stock is per product: reserve the total across lines that differ only by options.
+        const perProduct = new Map<string, number>();
+        for (const l of lines) perProduct.set(l.product.id, (perProduct.get(l.product.id) ?? 0) + l.item.quantity);
+        for (const [productId, quantity] of perProduct) await this.reserveStock(tx, productId, quantity);
 
-        const deliveryFee = input.fulfillment === 'delivery' ? (business.deliveryFee ?? city.config.deliveryBaseFee) : 0;
+        const deliveryFee = input.fulfillment === 'delivery' ? business.deliveryFee : 0;
         const coupon = input.couponCode ? await this.marketing.redeem(tx, business.id, input.couponCode, subtotal) : null;
         const discount = coupon?.discount ?? 0;
         const [order] = await tx
@@ -110,10 +124,15 @@ export class OrdersService {
           .returning();
 
         await tx.insert(orderItems).values(
-          input.items.map((item) => {
-            const product = byId.get(item.productId)!;
-            return { orderId: order!.id, productId: product.id, name: product.name, unitPrice: product.price, quantity: item.quantity };
-          }),
+          lines.map((l) => ({
+            orderId: order!.id,
+            productId: l.product.id,
+            name: l.product.name,
+            unitPrice: l.unitPrice,
+            quantity: l.item.quantity,
+            options: l.options,
+            note: l.item.note ?? null,
+          })),
         );
         await tx.insert(orderStatusHistory).values({ orderId: order!.id, toStatus: 'pending', actorId: user.id });
         await this.outbox.record(tx, {

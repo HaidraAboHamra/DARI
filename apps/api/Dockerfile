@@ -22,6 +22,8 @@ WORKDIR /app
 COPY --from=build /out .
 COPY --from=build /repo/apps/api/dist ./dist
 COPY --from=build /repo/apps/api/drizzle ./drizzle
+# Demo photos published by the seed (food v2)
+COPY --from=build /repo/apps/api/seed-media ./seed-media
 RUN mkdir -p /data/uploads && chown node:node /data/uploads
 USER node
 EXPOSE 4000

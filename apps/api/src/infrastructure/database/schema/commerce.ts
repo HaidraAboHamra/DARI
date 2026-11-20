@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
-import type { Place } from '@dari/contracts';
+import type { OrderItemOption, Place, ProductOptionGroup } from '@dari/contracts';
 import { createdAt, pk, updatedAt } from './_shared';
 import { businesses } from './directory';
 import { deliveryStatusEnum, deliveryTypeEnum, fulfillmentEnum, orderStatusEnum } from './enums';
@@ -23,6 +23,9 @@ export const products = pgTable(
     /** NULL = stock not tracked. Decremented atomically on order placement. */
     stock: integer(),
     sortOrder: integer().notNull().default(0),
+    /** Customization groups (size, extras…); validated by the contracts schema. */
+    options: jsonb().$type<ProductOptionGroup[]>().notNull().default([]),
+    isFeatured: boolean().notNull().default(false),
     searchText: text().notNull().default(''),
     deletedAt: timestamp({ withTimezone: true }),
     createdAt: createdAt(),
@@ -84,8 +87,10 @@ export const orderItems = pgTable(
     name: text().notNull(),
     unitPrice: integer().notNull(),
     quantity: integer().notNull(),
+    options: jsonb().$type<OrderItemOption[]>().notNull().default([]),
+    note: text(),
   },
-  (t) => [index().on(t.orderId)],
+  (t) => [index().on(t.orderId), index().on(t.productId)],
 );
 
 export const orderStatusHistory = pgTable(

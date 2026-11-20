@@ -43,6 +43,13 @@
       "when": 1795123607645,
       "tag": "0005_device_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795140516743,
+      "tag": "0006_food_v2",
+      "breakpoints": true
     }
   ]
 }

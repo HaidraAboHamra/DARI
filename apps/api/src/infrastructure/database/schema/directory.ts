@@ -44,6 +44,8 @@ export const businesses = pgTable(
     acceptsOrders: boolean().notNull().default(false),
     /** Overrides the city delivery fee when set. */
     deliveryFee: integer(),
+    prepMinutes: integer().notNull().default(20),
+    minOrder: integer().notNull().default(0),
     verifiedAt: timestamp({ withTimezone: true }),
     plan: planEnum().notNull().default('free'),
     planExpiresAt: timestamp({ withTimezone: true }),

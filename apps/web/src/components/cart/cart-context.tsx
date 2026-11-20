@@ -1,27 +1,16 @@
 'use client';
 
+import { addToCart, type Cart, type CartBusiness, cartCount, type CartLine, cartSubtotal, migrateCart, setLineQuantity } from '@dari/contracts';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-export interface CartLine {
-  productId: string;
-  name: string;
-  price: number;
-  quantity: number;
-}
-
-export interface Cart {
-  businessId: string;
-  businessName: string;
-  businessSlug: string;
-  lines: CartLine[];
-}
+export type { Cart, CartLine };
 
 interface CartApi {
   cart: Cart | null;
   count: number;
   subtotal: number;
-  add(business: Omit<Cart, 'lines'>, line: Omit<CartLine, 'quantity'>): 'added' | 'replaced';
-  setQuantity(productId: string, quantity: number): void;
+  add(business: CartBusiness, line: CartLine): 'added' | 'replaced';
+  setQuantity(key: string, quantity: number): void;
   replace(cart: Cart): void;
   clear(): void;
 }
@@ -32,7 +21,7 @@ const CartContext = createContext<CartApi | null>(null);
 function load(): Cart | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Cart) : null;
+    return raw ? migrateCart(JSON.parse(raw)) : null;
   } catch {
     return null;
   }
@@ -47,7 +36,7 @@ function persist(cart: Cart | null): void {
   }
 }
 
-/** Single-merchant cart kept on the device (no server round-trips while browsing). */
+/** Single-merchant cart kept on the device; rules live in @dari/contracts (shared with the app). */
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<Cart | null>(null);
 
@@ -57,42 +46,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const add = useCallback<CartApi['add']>((business, line) => {
     let outcome: 'added' | 'replaced' = 'added';
     setCart((current) => {
-      if (!current || current.businessId !== business.businessId) {
-        if (current?.lines.length) outcome = 'replaced';
-        return { ...business, lines: [{ ...line, quantity: 1 }] };
-      }
-      const existing = current.lines.find((l) => l.productId === line.productId);
-      const lines = existing
-        ? current.lines.map((l) => (l.productId === line.productId ? { ...l, quantity: Math.min(l.quantity + 1, 99) } : l))
-        : [...current.lines, { ...line, quantity: 1 }];
-      return { ...current, lines };
+      const next = addToCart(current, business, line);
+      if (next.replaced) outcome = 'replaced';
+      return next.cart;
     });
     return outcome;
   }, []);
 
-  const setQuantity = useCallback((productId: string, quantity: number) => {
-    setCart((current) => {
-      if (!current) return current;
-      const lines = current.lines
-        .map((l) => (l.productId === productId ? { ...l, quantity: Math.min(quantity, 99) } : l))
-        .filter((l) => l.quantity > 0);
-      return lines.length ? { ...current, lines } : null;
-    });
-  }, []);
-
+  const setQuantity = useCallback((key: string, quantity: number) => setCart((current) => setLineQuantity(current, key, quantity)), []);
   const clear = useCallback(() => setCart(null), []);
   const replace = useCallback((next: Cart) => setCart(next.lines.length ? next : null), []);
 
   const value = useMemo<CartApi>(
-    () => ({
-      cart,
-      count: cart?.lines.reduce((n, l) => n + l.quantity, 0) ?? 0,
-      subtotal: cart?.lines.reduce((n, l) => n + l.quantity * l.price, 0) ?? 0,
-      add,
-      setQuantity,
-      replace,
-      clear,
-    }),
+    () => ({ cart, count: cartCount(cart), subtotal: cartSubtotal(cart), add, setQuantity, replace, clear }),
     [cart, add, setQuantity, replace, clear],
   );
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

@@ -167,6 +167,12 @@ export interface Coupon {
   isActive: boolean;
 }
 
+/** A public coupon with its business, for city-wide offer banners. */
+export interface CityOffer {
+  coupon: Coupon;
+  business: BusinessSummary;
+}
+
 export interface Favorite {
   entityType: 'business' | 'listing' | 'event';
   entityId: string;
