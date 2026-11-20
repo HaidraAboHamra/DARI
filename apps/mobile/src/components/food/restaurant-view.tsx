@@ -7,7 +7,9 @@ import { type NativeScrollEvent, type NativeSyntheticEvent, Pressable, ScrollVie
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ContactActions, FavoriteButton, FollowButton, Reviews } from '@/components/business-extras';
 import { Icon } from '@/components/icons';
-import { Card, Chip, Empty, Loading, T } from '@/components/ui';
+import { MenuSkeleton } from '@/components/skeleton';
+import { Card, Chip, Empty, IconButton, T } from '@/components/ui';
+import { haptic } from '@/lib/haptics';
 import { useCart } from '@/lib/cart';
 import { config } from '@/lib/config';
 import { useApi } from '@/lib/query';
@@ -18,7 +20,7 @@ import { Photo } from './photo';
 import { DeliveryFacts, offerLabel } from './restaurant-card';
 
 const POPULAR = 'الأكثر طلباً';
-const TABS_HEIGHT = 56;
+const TABS_HEIGHT = 64;
 const BAR_HEIGHT = 52;
 const COVER_HEIGHT = 230;
 
@@ -67,6 +69,7 @@ export function RestaurantView({ b }: { b: BusinessDetail }) {
   };
   const add = (p: Product, choices: string[] = [], note = '', quantity = 1) => {
     const outcome = cart.add(business, makeLine(p, choices, note, quantity));
+    haptic.tap();
     flash(outcome === 'replaced' ? 'بدأنا سلة جديدة من هذا المطعم' : `أضيف «${p.name}»`);
   };
   // Plain items go straight to the basket; items with options open the sheet.
@@ -118,7 +121,7 @@ export function RestaurantView({ b }: { b: BusinessDetail }) {
                 <T variant="small">({b.ratingCount} تقييم)</T>
               </View>
               <View style={{ backgroundColor: b.isOpen ? '#2F7D5B1F' : '#C4553D1F', borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 3 }}>
-                <T style={{ fontSize: 12, fontFamily: fonts.bold, color: b.isOpen ? colors.success : colors.danger }}>{b.isOpen ? 'مفتوح الآن' : 'مغلق الآن'}{hours ? ` · ${hours}` : ''}</T>
+                <T style={{ fontSize: 13, lineHeight: 20, fontFamily: fonts.bold, color: b.isOpen ? colors.success : colors.danger }}>{b.isOpen ? 'مفتوح الآن' : 'مغلق الآن'}{hours ? ` · ${hours}` : ''}</T>
               </View>
             </View>
             <DeliveryFacts b={b} />
@@ -130,7 +133,7 @@ export function RestaurantView({ b }: { b: BusinessDetail }) {
                 <View key={o.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#EBD59640', borderWidth: 1, borderStyle: 'dashed', borderColor: colors.gold, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10, maxWidth: 300 }}>
                   <Icon name="tag" size={20} color={colors.goldDeep} />
                   <View>
-                    <T style={{ fontFamily: fonts.bold, fontSize: 13.5 }} numberOfLines={1}>{offerLabel(o)}{o.minOrder ? ` · فوق ${money(o.minOrder)}` : ''}</T>
+                    <T style={{ fontFamily: fonts.bold, fontSize: 14 }} numberOfLines={1}>{offerLabel(o)}{o.minOrder ? ` · فوق ${money(o.minOrder)}` : ''}</T>
                     <T variant="small">استخدم الكود {o.code}</T>
                   </View>
                 </View>
@@ -138,9 +141,9 @@ export function RestaurantView({ b }: { b: BusinessDetail }) {
             </ScrollView>
           )}
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: radius.pill, paddingHorizontal: 14, height: 46, gap: 8, borderWidth: 1, borderColor: colors.sand }}>
-            <Icon name="search" size={17} color={colors.muted} />
-            <TextInput value={q} onChangeText={setQ} placeholder={`ابحث في قائمة ${b.name}`} placeholderTextColor={colors.muted} style={{ flex: 1, fontFamily: fonts.regular, textAlign: 'right' }} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: radius.pill, paddingStart: 16, height: 50, gap: 8, borderWidth: 1, borderColor: colors.sand }}>
+            <Icon name="search" size={18} color={colors.muted} />
+            <TextInput value={q} onChangeText={setQ} placeholder={`ابحث في قائمة ${b.name}`} placeholderTextColor={colors.muted} style={{ flex: 1, minWidth: 0, height: '100%', fontFamily: fonts.regular, fontSize: 16, textAlign: 'right', paddingEnd: 16 }} />
           </View>
         </View>
 
@@ -148,13 +151,9 @@ export function RestaurantView({ b }: { b: BusinessDetail }) {
         <View style={{ backgroundColor: colors.ivory, borderBottomWidth: 1, borderBottomColor: colors.sand, paddingTop: compact ? insets.top : 0 }}>
           {compact && (
             <View style={{ height: BAR_HEIGHT, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16 }}>
-              <Pressable onPress={goBack} accessibilityLabel="رجوع" hitSlop={8}>
-                <Icon name="back" size={24} />
-              </Pressable>
+              <IconButton icon="back" label="رجوع" tone="plain" size={24} onPress={goBack} />
               <T variant="title" numberOfLines={1} style={{ flex: 1 }}>{b.name}</T>
-              <Pressable onPress={share} accessibilityLabel="مشاركة" hitSlop={8}>
-                <Icon name="share" size={20} />
-              </Pressable>
+              <IconButton icon="share" label="مشاركة" tone="plain" onPress={share} />
               <FavoriteButton b={b} light />
             </View>
           )}
@@ -168,7 +167,7 @@ export function RestaurantView({ b }: { b: BusinessDetail }) {
         {/* 3 · Menu */}
         <View onLayout={(e) => (menuTop.current = e.nativeEvent.layout.y)} style={{ paddingHorizontal: 16, paddingTop: 14, gap: 18 }}>
           {products.isLoading ? (
-            <Loading />
+            <MenuSkeleton />
           ) : !all.length ? (
             <Empty title="القائمة قيد التحضير" />
           ) : (
@@ -212,13 +211,9 @@ export function RestaurantView({ b }: { b: BusinessDetail }) {
       {/* Floating actions over the cover (replaced by the compact header when scrolled) */}
       {!compact && (
         <View style={{ position: 'absolute', top: insets.top + 8, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between' }} pointerEvents="box-none">
-          <Pressable onPress={goBack} accessibilityLabel="رجوع" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFFE6', alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="back" size={22} />
-          </Pressable>
+          <IconButton icon="back" label="رجوع" size={22} onPress={goBack} />
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Pressable onPress={share} accessibilityLabel="مشاركة" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFFE6', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="share" size={19} />
-            </Pressable>
+            <IconButton icon="share" label="مشاركة" onPress={share} />
             <FavoriteButton b={b} light />
           </View>
         </View>

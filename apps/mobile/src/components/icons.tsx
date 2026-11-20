@@ -1,9 +1,11 @@
 import Svg, { Circle, Path } from 'react-native-svg';
 import { colors } from '@/theme';
 
-type IconName = 'clock' | 'bike' | 'star' | 'search' | 'heart' | 'heartFill' | 'share' | 'back' | 'tag' | 'bag' | 'pin' | 'phone' | 'info' | 'close' | 'check' | 'fire';
+export type IconName = 'trash' | 'chevron' | 'clock' | 'bike' | 'star' | 'search' | 'heart' | 'heartFill' | 'share' | 'back' | 'tag' | 'bag' | 'pin' | 'phone' | 'info' | 'close' | 'check' | 'fire';
 
 const PATHS: Record<IconName, string> = {
+  trash: 'M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13M10 11v6M14 11v6',
+  chevron: 'M15 6l-6 6 6 6',
   clock: 'M12 7v5l3 2',
   bike: 'M5 17a2 2 0 1 0 0.01 0M19 17a2 2 0 1 0 0.01 0M7 17h6l3-6h3M10 11h5M14 7h2l1 4',
   star: 'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z',

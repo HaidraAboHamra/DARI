@@ -20,24 +20,24 @@ export function DeliveryFacts({ b, light }: { b: BusinessSummary; light?: boolea
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
         <Icon name="clock" size={15} color={color} />
-        <T style={{ fontSize: 12.5, color }}>{etaRange(b.prepMinutes)}</T>
+        <T style={{ fontSize: 13, lineHeight: 20, color }}>{etaRange(b.prepMinutes)}</T>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
         <Icon name="bike" size={16} color={color} />
-        <T style={{ fontSize: 12.5, color }}>{b.deliveryFee ? money(b.deliveryFee) : 'توصيل مجاني'}</T>
+        <T style={{ fontSize: 13, lineHeight: 20, color }}>{b.deliveryFee ? money(b.deliveryFee) : 'توصيل مجاني'}</T>
       </View>
-      {b.minOrder > 0 && <T style={{ fontSize: 12.5, color }}>الحد الأدنى {money(b.minOrder)}</T>}
+      {b.minOrder > 0 && <T style={{ fontSize: 13, lineHeight: 20, color }}>الحد الأدنى {money(b.minOrder)}</T>}
     </View>
   );
 }
 
 function Rating({ b }: { b: BusinessSummary }) {
-  if (!b.ratingCount) return <T style={{ fontSize: 12.5, color: colors.success, fontFamily: fonts.bold }}>جديد</T>;
+  if (!b.ratingCount) return <T style={{ fontSize: 13, color: colors.success, fontFamily: fonts.bold }}>جديد</T>;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
       <Icon name="star" size={14} color={colors.gold} />
       <T style={{ fontSize: 13, fontFamily: fonts.bold }}>{b.ratingAvg.toFixed(1)}</T>
-      <T style={{ fontSize: 12, color: colors.muted }}>({b.ratingCount})</T>
+      <T style={{ fontSize: 13, color: colors.muted }}>({b.ratingCount})</T>
     </View>
   );
 }
@@ -56,12 +56,12 @@ export function RestaurantCard({ b, offer }: { b: BusinessSummary; offer?: Coupo
         {offer && (
           <View style={{ position: 'absolute', top: 12, start: 12, backgroundColor: colors.gold, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <Icon name="tag" size={13} color={colors.navy} />
-            <T style={{ fontSize: 12, fontFamily: fonts.bold, color: colors.navy }}>{offerLabel(offer)}</T>
+            <T style={{ fontSize: 13, lineHeight: 20, fontFamily: fonts.bold, color: colors.navy }}>{offerLabel(offer)}</T>
           </View>
         )}
         {b.isFeatured && (
           <View style={{ position: 'absolute', top: 12, end: 12, backgroundColor: colors.navy, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
-            <T style={{ fontSize: 11.5, color: colors.champagne, fontFamily: fonts.bold }}>مميز</T>
+            <T style={{ fontSize: 13, lineHeight: 20, color: colors.champagne, fontFamily: fonts.bold }}>مميز</T>
           </View>
         )}
       </View>

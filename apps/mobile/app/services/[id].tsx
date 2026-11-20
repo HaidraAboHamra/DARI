@@ -30,7 +30,7 @@ export default function ServiceRequestScreen() {
         {r.status === 'cancelled' ? <T variant="title" style={{ color: colors.danger, textAlign: 'center' }}>{SERVICE_STATUS_LABEL.cancelled}</T> : STEPS.map((s, i) => (
           <View key={s} style={styles.row}>
             <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: i <= reached ? colors.gold : colors.sand, alignItems: 'center', justifyContent: 'center' }}>
-              <T style={{ fontSize: 12, fontFamily: fonts.bold }}>{i < reached ? '✓' : i + 1}</T>
+              <T style={{ fontSize: 13, fontFamily: fonts.bold }}>{i < reached ? '✓' : i + 1}</T>
             </View>
             <T style={{ fontFamily: i === reached ? fonts.bold : fonts.regular, color: i <= reached ? colors.navy : colors.muted }}>{SERVICE_STATUS_LABEL[s]}</T>
           </View>

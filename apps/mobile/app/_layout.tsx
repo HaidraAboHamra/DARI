@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { I18nManager, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Intro } from '@/components/intro';
+import { introMode } from '@/lib/prefs';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { CartProvider } from '@/lib/cart';
 import { queryClient } from '@/lib/query';
@@ -36,16 +37,20 @@ function Navigator() {
     IBMPlexSansArabic_700Bold,
   });
   const [introDone, setIntroDone] = useState(false);
+  const [intro, setIntro] = useState<'full' | 'short' | null>(null);
+  useEffect(() => {
+    void introMode().then(setIntro);
+  }, []);
 
   // The plain navy native splash hands over to the animated brand intro as soon as fonts are in.
   useEffect(() => {
-    if (fontsLoaded) void SplashScreen.hideAsync();
-  }, [fontsLoaded]);
+    if (fontsLoaded && intro) void SplashScreen.hideAsync();
+  }, [fontsLoaded, intro]);
   useEffect(() => {
     // First launch of a test build: ask which server to use before anything else.
     if (ready && introDone && !isServerConfigured()) setTimeout(() => router.push('/login'), 0);
   }, [ready, introDone]);
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || !intro) return null;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.navy }}>
@@ -66,7 +71,7 @@ function Navigator() {
           <Stack.Screen name="assistant" options={{ title: 'مساعد المدينة' }} />
         </Stack>
       )}
-      {!introDone && <Intro onDone={() => setIntroDone(true)} />}
+      {!introDone && <Intro variant={intro} onDone={() => setIntroDone(true)} />}
     </View>
   );
 }

@@ -14,17 +14,19 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, fonts, radius, shadow, space } from '@/theme';
+import { colors, fonts, radius, shadow, space, touch, type } from '@/theme';
+import { haptic } from '@/lib/haptics';
+import { Icon, type IconName } from './icons';
 
 type Variant = 'display' | 'title' | 'body' | 'muted' | 'label' | 'small';
 
 const TEXT: Record<Variant, object> = {
-  display: { fontFamily: fonts.display, fontSize: 30, color: colors.navy, lineHeight: 42 },
-  title: { fontFamily: fonts.display, fontSize: 19, color: colors.navy, lineHeight: 28 },
-  body: { fontFamily: fonts.regular, fontSize: 15, color: colors.ink, lineHeight: 24 },
-  muted: { fontFamily: fonts.regular, fontSize: 13, color: colors.muted, lineHeight: 20 },
-  label: { fontFamily: fonts.bold, fontSize: 15, color: colors.navy, lineHeight: 22 },
-  small: { fontFamily: fonts.medium, fontSize: 12, color: colors.muted, lineHeight: 18 },
+  display: { fontFamily: fonts.display, color: colors.navy, ...type.display },
+  title: { fontFamily: fonts.display, color: colors.navy, ...type.title },
+  body: { fontFamily: fonts.regular, color: colors.ink, ...type.body },
+  muted: { fontFamily: fonts.regular, color: colors.muted, ...type.small },
+  label: { fontFamily: fonts.bold, color: colors.navy, fontSize: 16, lineHeight: 24 },
+  small: { fontFamily: fonts.medium, color: colors.muted, ...type.caption },
 };
 
 /** All text goes through this component so fonts and direction stay consistent. */
@@ -77,11 +79,11 @@ export function Button({ title, variant = 'primary', loading, small, style, ...p
       disabled={disabled}
       style={({ pressed }) => [
         styles.button,
-        { backgroundColor: v.bg, borderColor: v.border ?? 'transparent', borderWidth: v.border ? 1 : 0, height: small ? 38 : 50, opacity: disabled ? 0.5 : pressed ? 0.85 : 1 },
+        { backgroundColor: v.bg, borderColor: v.border ?? 'transparent', borderWidth: v.border ? 1.5 : 0, height: small ? touch : 52, opacity: disabled ? 0.5 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
         style,
       ]}
     >
-      {loading ? <ActivityIndicator color={v.fg} /> : <T style={{ color: v.fg, fontFamily: fonts.bold, fontSize: small ? 13 : 15 }}>{title}</T>}
+      {loading ? <ActivityIndicator color={v.fg} /> : <T style={{ color: v.fg, fontFamily: fonts.bold, fontSize: small ? 14 : 16 }}>{title}</T>}
     </Pressable>
   );
 }
@@ -96,8 +98,8 @@ export function Badge({ label, tone = 'neutral' }: { label: string; tone?: 'neut
   } as const;
   const [bg, fg] = tones[tone];
   return (
-    <View style={{ backgroundColor: bg, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 2, alignSelf: 'flex-start' }}>
-      <T style={{ color: fg, fontFamily: fonts.bold, fontSize: 11 }}>{label}</T>
+    <View style={{ backgroundColor: bg, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 3, alignSelf: 'flex-start' }}>
+      <T style={{ color: fg, fontFamily: fonts.bold, fontSize: 13, lineHeight: 18 }}>{label}</T>
     </View>
   );
 }
@@ -107,7 +109,7 @@ export function Input({ label, error, ...props }: TextInputProps & { label?: str
     <View style={{ gap: 6 }}>
       {label && <T variant="label" style={{ fontSize: 14 }}>{label}</T>}
       <TextInput placeholderTextColor="#6B6A6899" {...props} style={[styles.input, props.multiline && { minHeight: 96, textAlignVertical: 'top' }, props.style]} />
-      {error && <T style={{ color: colors.danger, fontSize: 12 }}>{error}</T>}
+      {error && <T style={{ color: colors.danger, fontSize: 13 }}>{error}</T>}
     </View>
   );
 }
@@ -150,18 +152,28 @@ export function ErrorText({ message }: { message?: string | null }) {
 export function Stars({ value, count }: { value: number; count?: number }) {
   if (!value && !count) return <T variant="small">جديد</T>;
   return (
-    <T variant="small" style={{ color: colors.ink }}>
-      <T style={{ color: colors.gold }}>★ </T>
-      {value.toFixed(1)}
-      {count !== undefined ? ` (${count})` : ''}
-    </T>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+      <Icon name="star" size={15} color={colors.gold} />
+      <T variant="small" style={{ color: colors.ink }}>
+        {value.toFixed(1)}
+        {count !== undefined ? ` (${count})` : ''}
+      </T>
+    </View>
   );
 }
 
 export function Chip({ label, active, onPress }: { label: string; active?: boolean; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityState={{ selected: active }} style={[styles.chip, active ? { backgroundColor: colors.navy, borderColor: colors.navy } : null]}>
-      <T style={{ fontSize: 13, color: active ? colors.champagne : colors.ink, fontFamily: fonts.medium }}>{label}</T>
+    <Pressable
+      onPress={() => {
+        haptic.select();
+        onPress();
+      }}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      style={({ pressed }) => [styles.chip, active ? { backgroundColor: colors.navy, borderColor: colors.navy } : null, pressed && { opacity: 0.8 }]}
+    >
+      <T style={{ fontSize: 14, lineHeight: 20, color: active ? colors.champagne : colors.ink, fontFamily: active ? fonts.bold : fonts.medium }}>{label}</T>
     </Pressable>
   );
 }
@@ -169,8 +181,29 @@ export function Chip({ label, active, onPress }: { label: string; active?: boole
 export const styles = StyleSheet.create({
   card: { backgroundColor: colors.white, borderRadius: radius.card, padding: space(4), borderWidth: 1, borderColor: '#E8E1D2B3', ...shadow },
   button: { borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
-  input: { backgroundColor: colors.white, borderColor: colors.sand, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, fontFamily: fonts.regular, fontSize: 15, color: colors.ink, textAlign: 'right' },
+  input: { backgroundColor: colors.white, borderColor: colors.sand, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, minHeight: 52, fontFamily: fonts.regular, fontSize: 16, color: colors.ink, textAlign: 'right' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  chip: { borderWidth: 1, borderColor: colors.sand, backgroundColor: colors.white, borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 7 },
+  chip: { borderWidth: 1, borderColor: colors.sand, backgroundColor: colors.white, borderRadius: radius.pill, paddingHorizontal: 16, minHeight: touch, justifyContent: 'center' },
   night: { backgroundColor: colors.navy, borderRadius: 28, padding: space(5) },
 });
+
+/** Icon-only control with a full 44×44 touch target and an accessible name. */
+export function IconButton({ icon, label, onPress, tone = 'surface', color, size = 20, badge }: { icon: IconName; label: string; onPress: () => void; tone?: 'surface' | 'plain' | 'night'; color?: string; size?: number; badge?: number }) {
+  const bg = tone === 'surface' ? '#FFFFFFEB' : 'transparent';
+  const fg = color ?? (tone === 'night' ? colors.champagne : colors.navy);
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => ({ width: touch, height: touch, borderRadius: touch / 2, backgroundColor: bg, alignItems: 'center', justifyContent: 'center', borderWidth: tone === 'night' ? 1 : 0, borderColor: '#EBD59666', opacity: pressed ? 0.7 : 1 })}
+    >
+      <Icon name={icon} size={size} color={fg} />
+      {!!badge && (
+        <View style={{ position: 'absolute', top: -2, end: -2, minWidth: 20, height: 20, borderRadius: 10, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 }}>
+          <T style={{ fontSize: 13, lineHeight: 18, fontFamily: fonts.bold, color: colors.navy }}>{badge}</T>
+        </View>
+      )}
+    </Pressable>
+  );
+}

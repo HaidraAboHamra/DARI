@@ -13,7 +13,7 @@ export function priceFrom(p: Product): string {
 }
 
 function AddButton({ p, onAdd, small }: { p: Product; onAdd: (p: Product) => void; small?: boolean }) {
-  const size = small ? 32 : 36;
+  const size = 44; // WCAG 2.5.5 / HIG minimum; `small` only lightens the glyph
   return (
     <Pressable
       onPress={() => onAdd(p)}
@@ -22,7 +22,7 @@ function AddButton({ p, onAdd, small }: { p: Product; onAdd: (p: Product) => voi
       hitSlop={6}
       style={[{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.sand, opacity: p.stock === 0 ? 0.4 : 1 }, shadow]}
     >
-      <T style={{ fontSize: small ? 20 : 22, lineHeight: small ? 24 : 26, color: colors.goldDeep, fontFamily: fonts.bold }}>+</T>
+      <T style={{ fontSize: small ? 22 : 24, lineHeight: 28, color: colors.goldDeep, fontFamily: fonts.bold }}>+</T>
     </Pressable>
   );
 }
@@ -36,13 +36,13 @@ export function MenuRow({ p, onOpen, onAdd, canOrder, inCart }: { p: Product; on
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           {inCart > 0 && (
             <View style={{ backgroundColor: colors.gold, borderRadius: radius.pill, minWidth: 22, height: 22, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 }}>
-              <T style={{ fontSize: 12, fontFamily: fonts.bold, color: colors.navy }}>{inCart}×</T>
+              <T style={{ fontSize: 13, lineHeight: 18, fontFamily: fonts.bold, color: colors.navy }}>{inCart}×</T>
             </View>
           )}
           <T variant="label" style={{ fontSize: 15.5 }}>{p.name}</T>
           {p.isPopular && <PopularBadge />}
         </View>
-        {p.description && <T variant="muted" numberOfLines={2} style={{ fontSize: 13.5, lineHeight: 20 }}>{p.description}</T>}
+        {p.description && <T variant="muted" numberOfLines={2}>{p.description}</T>}
         <T style={{ color: colors.navy, fontFamily: fonts.bold, marginTop: 'auto' }}>{soldOut ? 'نفدت الكمية' : priceFrom(p)}</T>
       </View>
       <View style={{ width: 104, height: 104 }}>
@@ -70,7 +70,7 @@ export function PopularCard({ p, onOpen, onAdd, canOrder }: { p: Product; onOpen
         )}
       </View>
       <T variant="label" numberOfLines={1} style={{ fontSize: 14 }}>{p.name}</T>
-      <T style={{ fontSize: 13, color: colors.goldDeep, fontFamily: fonts.bold }}>{priceFrom(p)}</T>
+      <T style={{ fontSize: 14, color: colors.goldDeep, fontFamily: fonts.bold }}>{priceFrom(p)}</T>
     </Pressable>
   );
 }

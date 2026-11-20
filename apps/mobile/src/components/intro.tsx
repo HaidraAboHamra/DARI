@@ -36,9 +36,10 @@ const timing = (value: Animated.Value, toValue: number, duration: number, delay 
  * Brand intro («البداية»): the three arches draw in, the person-dot drops into
  * their embrace with a glow, then «داري», the promise and DARI · CITY OS appear
  * under twinkling sparks — the brand board's motion, condensed to ~2.6 s.
- * Tap to skip; reduced-motion users see the final frame briefly.
+ * Tap to skip; reduced-motion users see the final frame briefly. Later launches the
+ * same day get a ~0.9 s version (mark already drawn, dot + name only) — UX study P0-7.
  */
-export function Intro({ onDone }: { onDone: () => void }) {
+export function Intro({ onDone, variant = 'full' }: { onDone: () => void; variant?: 'full' | 'short' }) {
   const { width, height } = useWindowDimensions();
   const draw = useRef(ARCHES.map(() => new Animated.Value(1))).current;
   const filled = useRef(new Animated.Value(0)).current;
@@ -67,6 +68,15 @@ export function Intro({ onDone }: { onDone: () => void }) {
     );
     void AccessibilityInfo.isReduceMotionEnabled().then((reduced) => {
       if (cancelled) return;
+      if (variant === 'short' && !reduced) {
+        draw.forEach((d) => d.setValue(0));
+        filled.setValue(1);
+        Animated.sequence([
+          Animated.parallel([Animated.spring(dot, { toValue: 1, friction: 6, tension: 120, useNativeDriver: false }), timing(glow, 1, 350), timing(word, 1, 300, 80), timing(tag, 1, 300, 160)]),
+          Animated.delay(200),
+        ]).start(({ finished: ok }) => ok && finish());
+        return;
+      }
       if (reduced) {
         draw.forEach((d) => d.setValue(0));
         [filled, dot, glow, word, tag].forEach((v) => v.setValue(1));

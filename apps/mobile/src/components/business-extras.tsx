@@ -26,7 +26,7 @@ export function FavoriteButton({ b, light }: { b: BusinessDetail; light?: boolea
     <Pressable
       accessibilityLabel={on ? 'إزالة من المفضلة' : 'أضف إلى المفضلة'}
       onPress={() => requireUser(() => api.request('/me/favorites', { method: on ? 'DELETE' : 'PUT', body: { entityType: 'business', entityId: b.id } }))}
-      style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: light ? '#FFFFFFE6' : 'transparent', borderWidth: light ? 0 : 1, borderColor: '#EBD59666' }}
+      style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: light ? '#FFFFFFEB' : 'transparent', borderWidth: light ? 0 : 1, borderColor: '#EBD59666' }}
     >
       <Icon name={on ? 'heartFill' : 'heart'} size={20} color={on ? colors.danger : light ? colors.navy : colors.champagne} />
     </Pressable>
@@ -64,8 +64,8 @@ export function Reviews({ b }: { b: BusinessDetail }) {
         <View style={[styles.row, { flexWrap: 'wrap' }]}>
           <T variant="muted">قيّم تجربتك:</T>
           {[1, 2, 3, 4, 5].map((n) => (
-            <Pressable key={n} accessibilityLabel={`${n} نجوم`} onPress={() => requireUser(() => api.request(`/businesses/${b.id}/reviews/mine`, { method: 'PUT', body: { rating: n } }))}>
-              <Icon name="star" size={26} color={colors.gold} />
+            <Pressable key={n} accessibilityLabel={`${n} نجوم`} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }} onPress={() => requireUser(() => api.request(`/businesses/${b.id}/reviews/mine`, { method: 'PUT', body: { rating: n } }))}>
+              <Icon name="star" size={28} color={colors.gold} />
             </Pressable>
           ))}
         </View>
