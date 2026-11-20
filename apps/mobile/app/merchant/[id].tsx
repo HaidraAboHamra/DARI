@@ -1,5 +1,5 @@
 import { nextOrderStatuses, type Order, type Page, type SmartInsight } from '@dari/contracts';
-import { money, ORDER_ACTION_LABEL, ORDER_STATUS_LABEL, timeAgo } from '@dari/contracts/i18n';
+import { itemSummary, money, ORDER_ACTION_LABEL, ORDER_STATUS_LABEL, timeAgo } from '@dari/contracts/i18n';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, View } from 'react-native';
@@ -47,7 +47,12 @@ export default function MerchantHome() {
             <T variant="label" style={{ flex: 1 }}>{o.number} · {o.customerName ?? 'زبون'}</T>
             <Badge label={ORDER_STATUS_LABEL[o.status]} tone={o.status === 'pending' ? 'gold' : 'neutral'} />
           </View>
-          <T variant="muted">{o.items.map((i) => `${i.quantity}× ${i.name}`).join('، ')}</T>
+          {o.items.map((i, index) => (
+            <T key={index} style={{ fontSize: 14 }}>
+              {itemSummary(i)}
+              {i.note ? <T style={{ color: colors.goldDeep, fontSize: 14 }}> — «{i.note}»</T> : null}
+            </T>
+          ))}
           <T variant="small">{o.fulfillment === 'delivery' ? `توصيل${o.address ? ` · ${o.address.text}` : ''}` : 'استلام'} · {money(o.total, o.currency)} · {timeAgo(o.createdAt)}</T>
           {o.notes && <T variant="small" style={{ color: colors.goldDeep }}>ملاحظة: {o.notes}</T>}
           <View style={[styles.row, { flexWrap: 'wrap' }]}>

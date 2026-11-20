@@ -6,7 +6,7 @@ import { ServiceTile } from '@/components/brand';
 import { Card, Screen, styles, T } from '@/components/ui';
 import { colors } from '@/theme';
 
-const ROUTE: Partial<Record<string, string>> = { news: '/news', jobs: '/jobs', events: '/events?kind=event', trips: '/events?kind=trip', property: '/property' };
+const ROUTE: Partial<Record<string, string>> = { food: '/food', news: '/news', jobs: '/jobs', events: '/events?kind=event', trips: '/events?kind=trip', property: '/property' };
 const EXTRA = [
   { title: 'اطلب خدمة واستلم عروض أسعار', href: '/services/new' },
   { title: 'توصيل لأي شي («اشترِ لي»)', href: '/delivery' },

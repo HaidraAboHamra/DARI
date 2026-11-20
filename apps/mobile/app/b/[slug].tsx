@@ -1,4 +1,4 @@
-import { type BookableResource, type BusinessDetail, type Connection, type Coupon, isOpenAt, type Page, type Product, type Review, VERTICAL_META } from '@dari/contracts';
+import { type BookableResource, makeLine, type BusinessDetail, type Connection, type Coupon, isOpenAt, type Page, type Product, type Review, VERTICAL_META } from '@dari/contracts';
 import { money, timeAgo } from '@dari/contracts/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Image, Linking, Pressable, View } from 'react-native';
 import { ServiceGlyph } from '@/components/brand';
 import { BookingWidget } from '@/components/booking';
+import { RestaurantView } from '@/components/food/restaurant-view';
 import { Button, Card, Empty, Loading, Screen, Section, Stars, styles, T } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -31,13 +32,15 @@ export default function BusinessPage() {
   if (business.isLoading) return <Loading />;
   const b = business.data;
   if (!b) return <Screen><Empty title="النشاط غير موجود" /></Screen>;
+  // Restaurants and shops that take orders get the full ordering experience.
+  if (b.acceptsOrders && (b.vertical === 'food' || b.vertical === 'shopping')) return <RestaurantView b={b} />;
   const open = isOpenAt(b.openingHours, new Date(), 'Asia/Damascus');
   const connected = connections.data?.some((c) => c.business.id === b.id) ?? false;
   const sections = Map.groupBy(products.data ?? [], (p) => p.section ?? 'المنتجات');
 
   const requireUser = (fn: () => Promise<unknown>) => (user ? void fn().then(() => qc.invalidateQueries()) : router.push('/login'));
   const add = (p: Product) => {
-    const outcome = cart.add({ businessId: b.id, businessName: b.name, businessSlug: b.slug }, { productId: p.id, name: p.name, price: p.price });
+    const outcome = cart.add({ businessId: b.id, businessName: b.name, businessSlug: b.slug }, makeLine(p));
     setToast(outcome === 'replaced' ? 'بدأنا سلة جديدة من هذا المحل' : `أضيف «${p.name}»`);
     setTimeout(() => setToast(null), 1800);
   };

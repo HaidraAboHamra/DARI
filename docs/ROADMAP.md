@@ -13,6 +13,7 @@ How the code maps to the *Salamiyah City OS Master Blueprint* and the
 | News + editor | ✅ | `modules/news`, `web/(site)/editor` |
 | Jobs + applications | ✅ | `modules/jobs` |
 | Marketplace: catalog, cart, orders (COD), stock, coupons, reorder | ✅ | `modules/catalog`, `modules/orders`, `modules/marketing` |
+| Food ordering v2: item options (size/extras/spice), kitchen notes, minimum order, prep-time ETA, «الأكثر طلباً», city offers, open-now | ✅ | `domain/product-options.ts`, `domain/cart.ts`, `app/food`, `components/food` |
 | Delivery for anything + courier board, earnings | ✅ | `modules/delivery`, `web/(site)/courier` |
 | Event tracking (search → click → action) | ✅ | `modules/analytics` |
 

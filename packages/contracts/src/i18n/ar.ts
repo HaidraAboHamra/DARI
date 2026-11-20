@@ -136,3 +136,8 @@ export function itemSummary(item: { quantity: number; name: string; options?: re
   const choices = item.options?.map((o) => o.choice).join(' · ');
   return `${item.quantity} × ${item.name}${choices ? ` (${choices})` : ''}`;
 }
+
+/** Delivery ETA shown on restaurant cards: preparation + typical local delivery. */
+export function etaRange(prepMinutes: number): string {
+  return `${prepMinutes + 10}–${prepMinutes + 20} د`;
+}

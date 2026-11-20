@@ -45,6 +45,8 @@ export class MediaController {
       .header('content-length', info.size)
       .header('cache-control', 'public, max-age=31536000, immutable')
       .header('x-content-type-options', 'nosniff')
+      // Public images are embedded by the website and apps on other origins (the global default is same-origin).
+      .header('cross-origin-resource-policy', 'cross-origin')
       .send(createReadStream(target));
   }
 }

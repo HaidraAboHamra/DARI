@@ -39,6 +39,8 @@ describe('media uploads (e2e)', () => {
     expect(served.statusCode).toBe(200);
     expect(served.headers['content-type']).toBe('image/png');
     expect(served.headers['cache-control']).toContain('immutable');
+    // The website and apps embed media from another origin.
+    expect(served.headers['cross-origin-resource-policy']).toBe('cross-origin');
     expect(served.rawPayload.equals(PNG)).toBe(true);
   });
 

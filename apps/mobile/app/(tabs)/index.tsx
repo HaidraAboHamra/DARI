@@ -14,7 +14,7 @@ import { useApi } from '@/lib/query';
 import { colors, fonts, radius, space } from '@/theme';
 
 const SUGGESTIONS = ['صيدلية مناوبة هلق', 'مطعم فاتح هلق', 'بدي سباك', 'في شغل؟', 'بيت للإيجار'];
-const ROUTE: Partial<Record<string, string>> = { news: '/news', jobs: '/jobs', events: '/events?kind=event', trips: '/events?kind=trip', property: '/property' };
+const ROUTE: Partial<Record<string, string>> = { food: '/food', news: '/news', jobs: '/jobs', events: '/events?kind=event', trips: '/events?kind=trip', property: '/property' };
 
 /** «شو بدك اليوم؟» — the front door of the city. */
 export default function Home() {

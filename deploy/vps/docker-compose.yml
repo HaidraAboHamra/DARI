@@ -39,6 +39,8 @@ services:
     image: dari-api:local
     environment: *api-env
     command: ['sh', '-c', 'node dist/infrastructure/database/migrate.js && node dist/infrastructure/database/seed/seed.js']
+    # The seed publishes demo photos into the same uploads volume the API serves from.
+    volumes: [uploads:/data/uploads]
     depends_on: { postgres: { condition: service_healthy } }
 
   api:
