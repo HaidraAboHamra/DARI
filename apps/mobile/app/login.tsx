@@ -3,8 +3,11 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { LogoMark } from '@/components/brand';
 import { Button, ErrorText, Input, Screen, styles, T } from '@/components/ui';
-import { errorMessage } from '@/lib/api';
+import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { config } from '@/lib/config';
+import { queryClient } from '@/lib/query';
+import { switchServer } from '@/lib/server';
 import { colors } from '@/theme';
 
 /** Phone + one-time code. No passwords to forget. */
@@ -51,7 +54,34 @@ export default function Login() {
             <Button title="تغيير الرقم" variant="ghost" onPress={() => { setSent(false); setCode(''); }} />
           </>
         )}
+        {config.serverSwitch && <ServerSwitch />}
       </Screen>
     </KeyboardAvoidingView>
+  );
+}
+
+/** Test builds only: point the app at the server under test. */
+function ServerSwitch() {
+  const [value, setValue] = useState(api.serverUrl);
+  const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    setBusy(true);
+    try {
+      setStatus({ ok: true, text: `متصل بـ ${await switchServer(value)}` });
+      void queryClient.invalidateQueries();
+    } catch (err) {
+      setStatus({ ok: false, text: err instanceof Error ? err.message : 'تعذر الاتصال' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <View style={{ gap: 8, marginTop: 24, padding: 12, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.sand }}>
+      <T variant="small">نسخة اختبار — عنوان الخادم</T>
+      <Input value={value} onChangeText={setValue} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="http://192.168.1.20:4000" style={{ textAlign: 'left' }} />
+      <Button small variant="secondary" title="حفظ واختبار الاتصال" loading={busy} onPress={() => void save()} />
+      {status && <T variant="small" style={{ color: status.ok ? colors.success : colors.danger }}>{status.text}</T>}
+    </View>
   );
 }

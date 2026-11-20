@@ -1,0 +1,79 @@
+# Dari test stack for a shared VPS. Everything listens on 127.0.0.1 only;
+# nginx publishes it on one port (see install.sh). Values come from /opt/dari/.env.
+name: dari
+
+x-api-env: &api-env
+  # Test deployment: development mode keeps the fixed demo OTP code (no SMS provider yet).
+  # For real users: NODE_ENV=production, remove OTP_DEV_CODE, set SMS_PROVIDER (the API refuses otherwise).
+  NODE_ENV: development
+  OTP_DEV_CODE: ${OTP_DEV_CODE:-123456}
+  DATABASE_URL: postgres://dari:${POSTGRES_PASSWORD:?}@postgres:5432/dari
+  REDIS_URL: redis://redis:6379
+  JWT_SECRET: ${JWT_SECRET:?}
+  CORS_ORIGINS: ${PUBLIC_URL:?}
+  PUBLIC_API_URL: ${PUBLIC_URL:?}
+  UPLOAD_DIR: /data/uploads
+  TRUST_PROXY: 'true'
+  LOG_LEVEL: info
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  postgres:
+    <<: *restart
+    image: postgres:16-alpine
+    environment: { POSTGRES_USER: dari, POSTGRES_PASSWORD: '${POSTGRES_PASSWORD:?}', POSTGRES_DB: dari }
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ['CMD-SHELL', 'pg_isready -U dari'], interval: 5s, retries: 20 }
+
+  redis:
+    <<: *restart
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes', '--maxmemory', '256mb', '--maxmemory-policy', 'noeviction']
+    volumes: [redisdata:/data]
+    healthcheck: { test: ['CMD', 'redis-cli', 'ping'], interval: 5s, retries: 20 }
+
+  migrate:
+    build: { context: ../.., dockerfile: apps/api/Dockerfile }
+    image: dari-api:local
+    environment: *api-env
+    command: ['sh', '-c', 'node dist/infrastructure/database/migrate.js && node dist/infrastructure/database/seed/seed.js']
+    depends_on: { postgres: { condition: service_healthy } }
+
+  api:
+    <<: *restart
+    build: { context: ../.., dockerfile: apps/api/Dockerfile }
+    image: dari-api:local
+    environment: *api-env
+    ports: ['127.0.0.1:${API_PORT:-4100}:4000']
+    volumes: [uploads:/data/uploads]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  worker:
+    <<: *restart
+    build: { context: ../.., dockerfile: apps/api/Dockerfile }
+    image: dari-api:local
+    environment: *api-env
+    command: ['node', 'dist/worker.js']
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  web:
+    <<: *restart
+    build: { context: ../.., dockerfile: apps/web/Dockerfile }
+    image: dari-web:local
+    environment:
+      API_URL: http://api:4000/api/v1
+      NEXT_PUBLIC_CITY: salamiyah
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    ports: ['127.0.0.1:${WEB_PORT:-3100}:3000']
+    depends_on: [api]
+
+volumes:
+  pgdata:
+  redisdata:
+  uploads:

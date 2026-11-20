@@ -2,6 +2,7 @@ import type { AuthTokens, UserProfile } from '@dari/contracts';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from './api';
 import { registerForPush, unregisterPush } from './push';
+import { loadServerOverride } from './server';
 
 interface AuthApi {
   user: UserProfile | null;
@@ -21,7 +22,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     api.listen((tokens: AuthTokens | null) => setUser(tokens?.user ?? null));
-    void api.restore().finally(() => setReady(true));
+    void loadServerOverride()
+      .then(() => api.restore())
+      .finally(() => setReady(true));
   }, []);
 
   const requestCode = useCallback(async (phone: string) => {

@@ -65,6 +65,25 @@ pnpm --filter @dari/mobile web        # browser preview (add http://localhost:80
 ```
 Push notifications need an EAS project (`eas init`) and `PUSH_PROVIDER=expo` on the API. Store builds: `eas build -p android|ios`.
 
+**Test APK (no Expo account needed):** with the Android SDK installed (`ANDROID_HOME`), run
+`pnpm --filter @dari/mobile apk:test` → `apps/mobile/android/app/build/outputs/apk/release/app-release.apk`.
+Test builds show a «عنوان الخادم» box on the login screen (and open it on first launch), so one APK works
+against any server; they also allow plain-HTTP servers. Store builds have neither.
+
+**Shared VPS with nginx (e.g. next to other sites):** one command, run as root on the server — it adds only
+`/opt/dari`, the Docker stack `dari` and the nginx site `dari-ip` on port 8086, and is safe to re-run for updates:
+```bash
+curl -fsSL https://raw.githubusercontent.com/HaidraAboHamra/DARI/ccr-78982c29-ug2t1b/deploy/vps/install.sh | sudo bash
+```
+
+**Test server for the APK:** on any Linux VPS with Docker:
+```bash
+git clone <repo> dari && cd dari
+PUBLIC_API_URL=http://<server-ip>:4000 JWT_SECRET=$(openssl rand -hex 32) docker compose up -d --build
+```
+Open port 4000 (API) and 3000 (website) in the firewall, then type `<server-ip>:4000` in the app.
+The compose stack runs in development mode with the demo OTP code `123456` — fine for testing, never for real users.
+
 ### Demo accounts
 Login is by phone + OTP. In development the code is always **123456**.
 

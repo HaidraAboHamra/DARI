@@ -1,5 +1,6 @@
 # Full local stack: `docker compose up --build`, then open http://localhost:3000
 # Demo logins (OTP code 123456): admin 0900000001, merchant 0900000002, courier 0900000003, citizen 0900000005
+# On a test server: PUBLIC_API_URL=http://<server-ip>:4000 JWT_SECRET=$(openssl rand -hex 32) docker compose up -d --build
 name: dari
 
 x-api-env: &api-env
@@ -8,9 +9,9 @@ x-api-env: &api-env
   OTP_DEV_CODE: '123456'
   DATABASE_URL: postgres://dari:dari@postgres:5432/dari
   REDIS_URL: redis://redis:6379
-  JWT_SECRET: local-compose-secret-change-me-0123456789abcdef
+  JWT_SECRET: ${JWT_SECRET:-local-compose-secret-change-me-0123456789abcdef}
   CORS_ORIGINS: http://localhost:3000
-  PUBLIC_API_URL: http://localhost:4000
+  PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:4000}
   UPLOAD_DIR: /data/uploads
   LOG_LEVEL: info
 
@@ -20,13 +21,13 @@ services:
     environment: { POSTGRES_USER: dari, POSTGRES_PASSWORD: dari, POSTGRES_DB: dari }
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck: { test: ['CMD-SHELL', 'pg_isready -U dari'], interval: 5s, retries: 10 }
-    ports: ['5432:5432']
+    ports: ['127.0.0.1:5432:5432'] # never expose the database beyond the host
 
   redis:
     image: redis:7-alpine
     command: ['redis-server', '--appendonly', 'yes']
     healthcheck: { test: ['CMD', 'redis-cli', 'ping'], interval: 5s, retries: 10 }
-    ports: ['6379:6379']
+    ports: ['127.0.0.1:6379:6379']
 
   migrate:
     build: { context: ., dockerfile: apps/api/Dockerfile }

@@ -18,19 +18,59 @@
     },
     "android": {
       "package": "sy.dari.app",
-      "permissions": ["POST_NOTIFICATIONS"]
+      "permissions": [
+        "POST_NOTIFICATIONS"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B1424"
+      }
     },
-    "web": { "bundler": "metro", "output": "single" },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
     "plugins": [
       "expo-router",
       "expo-secure-store",
       "expo-font",
       "expo-status-bar",
-      ["expo-localization", { "supportsRTL": true, "forcesRTL": true }],
-      ["expo-notifications", { "color": "#C9A24B" }],
-      ["expo-image-picker", { "photosPermission": "لإرفاق صور المنتجات والعقارات" }]
+      [
+        "expo-localization",
+        {
+          "supportsRTL": true,
+          "forcesRTL": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#C9A24B"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "لإرفاق صور المنتجات والعقارات"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#0B1424"
+        }
+      ]
     ],
-    "extra": { "supportsRTL": true, "forcesRTL": true },
-    "experiments": { "typedRoutes": false }
+    "extra": {
+      "supportsRTL": true,
+      "forcesRTL": true
+    },
+    "experiments": {
+      "typedRoutes": false
+    },
+    "icon": "./assets/icon.png"
   }
 }
